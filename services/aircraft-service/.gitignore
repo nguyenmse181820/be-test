@@ -1,0 +1,108 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+# ========== Java / Spring Boot ==========
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.tmp
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Gradle
+.gradle/
+!gradle-wrapper.jar
+gradle-app.setting
+gradle-app.setting.bak
+
+# IntelliJ
+.idea/
+out/
+
+# Logs
+logs/
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# ========== React (Vite hoặc CRA) ==========
+node_modules/
+dist/
+.vite/
+*.env
+.env.*.local
+.env.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ========== Docker & Docker Compose ==========
+# Docker volumes (ví dụ mysql volume được bind ra host)
+mysql_data_exe201/
+postgres_data/
+redis_data/
+
+# Docker environment
+*.pid
+*.sock
+
+# Docker Compose override
+docker-compose.override.yml
+.env.docker
+.env.prod
+.env.dev
+.env*
+
+# ========== Optional: OS & Editor Artifacts ==========
+*.swp
+*.swo
+*.bak
+*.orig
+
+# ========== Coverage / Test Artifacts ==========
+coverage/
+.nyc_output/
+test-results/
+jacoco.exec
+*.lcov

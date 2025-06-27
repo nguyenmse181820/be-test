@@ -1,0 +1,20 @@
+spring:
+  config:
+    import: optional:configserver:http://localhost:8888
+  application:
+    name: booking-service
+
+# Service URLs configuration
+services:
+  flight-service:
+    url: ${FLIGHT_SERVICE_URL:http://localhost:8084}
+  loyalty-service:
+    url: ${LOYALTY_SERVICE_URL:http://localhost:8086}
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8081}
+  notification-service:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8089}
+
+# Frontend configuration
+frontend:
+  url: ${FRONTEND_URL:http://localhost:5173}

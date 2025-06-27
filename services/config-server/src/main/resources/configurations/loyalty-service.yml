@@ -1,0 +1,35 @@
+server:
+  port: 8085
+spring:
+  datasource:
+#    driver-class-name: org.postgresql.Driver
+#    url: jdbc:postgresql://18.139.219.235:5433/loyalty_db
+#    username: boeing
+#    password: boeing
+    url: jdbc:postgresql://localhost:5432/loyalty_db
+    username: postgres
+    password: 12345
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true
+
+membership:
+  silver:
+    points: 1000
+    rate: 0.05
+  gold:
+    points: 5000
+    rate: 0.10
+  platinum:
+    points: 10000
+    rate: 0.15

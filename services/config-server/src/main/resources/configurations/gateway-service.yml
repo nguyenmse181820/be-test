@@ -1,0 +1,53 @@
+server:
+  port: 8080
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: user-service
+          uri: lb:http://USER-SERVICE
+          predicates:
+            - Path=/api/v1/users/**
+
+        - id: flight-service
+          uri: lb:http://FLIGHT-SERVICE
+          predicates:
+            - Path=/flight-service/**
+
+        - id: user-service-swagger
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-service/swagger-ui.html
+          filters:
+            - RewritePath=/user-service(?<segment>/?.*), $\{segment}
+
+        - id: booking-service
+          uri: lb://BOOKING-SERVICE
+          predicates:
+            - Path=/booking-service/**
+
+        - id: check-in-service
+          uri: lb:http://CHECK-IN-SERVICE
+          predicates:
+            - Path=/api/v1/checkin/**
+
+        - id: check-in-service-swagger
+          uri: lb://CHECK-IN-SERVICE
+          predicates:
+            - Path=/check-in-service/swagger-ui.html
+          filters:
+            - RewritePath=/check-in-service(?<segment>/?.*), $\{segment}
+
+        - id: aircraft-service
+          uri: lb://AIRCRAFTSERVICE
+          predicates:
+            - Path=/air-craft/**
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka

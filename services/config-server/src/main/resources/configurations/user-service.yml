@@ -1,0 +1,53 @@
+server:
+  port: 8086
+
+spring:
+  datasource:
+#    url: jdbc:postgresql://18.139.219.235:5433/boeing_users
+#    username: boeing
+#    password: boeing
+    url: jdbc:postgresql://localhost:5432/boeing_users
+    username: postgres
+    password: 12345
+
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+
+jwt:
+  secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
+  expiration: 86400000 # 24h
+  reset-password:
+    expiration: 300000 # 5'
+
+twilio:
+  account:
+    sid: ACbeb340fa2fdd5dbdb31fdd83c2269f80
+  auth:
+    token: 8ff8dfc88c90c01b772743db758a7377
+  phone:
+    number: +15306150525
+
+springdoc:
+  swagger-ui:
+    path: /
+    operationsSorter: alpha
+    tagsSorter: alpha
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/

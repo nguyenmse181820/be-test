@@ -1,0 +1,49 @@
+# docker compose up -d
+# docker compose down --volumes
+services:
+  postgresql:
+    container_name: postgresql
+    image: postgres
+    environment:
+      POSTGRES_USER: boeing
+      POSTGRES_PASSWORD: boeing
+      POSTGRES_DB: boeing
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+  
+#  zookeeper:
+#    container_name: zookeeper
+#    image: confluentinc/cp-zookeeper:latest
+#    environment:
+#      ZOOKEEPER_SERVER_ID: 1
+#      ZOOKEEPER_CLIENT_PORT: 2181
+#      ZOOKEEPER_TICK_TIME: 2000
+#    ports:
+#      - "22181:2181"
+#    profiles:
+#      - init
+#    restart: unless-stopped
+#
+#  kafka:
+#    container_name: kafka
+#    image: confluentinc/cp-kafka:latest
+#    environment:
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+#      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+#    ports:
+#      - "9092:9092"
+#    profiles:
+#      - init
+#    depends_on:
+#      - zookeeper
+
+volumes:
+  postgres:

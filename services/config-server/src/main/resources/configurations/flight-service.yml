@@ -1,0 +1,28 @@
+spring:
+  datasource:
+#    url: jdbc:postgresql://18.139.219.235:5433/flight_db
+#    username: boeing
+#    password: boeing
+    url: jdbc:postgresql://localhost:5432/flight_db
+    username: postgres
+    password: 12345
+
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database: postgresql
+    hibernate:
+      ddl-auto: update
+  application:
+    name: flight-service
+server:
+  servlet:
+    context-path: /flight-service
+  port: 8084
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
+  default-produces-media-type: application/json
+external:
+  aircraftURL: ${AIRCRAFT_SERVICE_URL:http://localhost:8081/air-craft/}

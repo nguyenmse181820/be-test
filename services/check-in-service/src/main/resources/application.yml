@@ -1,0 +1,12 @@
+spring:
+  config:
+    import: optional:configserver:http://localhost:8888
+  application:
+    name: check-in-service
+
+# Service URLs configuration
+services:
+  flight-service:
+    url: ${FLIGHT_SERVICE_URL:http://localhost:8084}
+  check-in-service:
+    url: ${CHECK_IN_SERVICE_URL:http://localhost:8082}
