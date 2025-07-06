@@ -1,5 +1,6 @@
 package com.boeing.flightservice.dto.response;
 
+import com.boeing.flightservice.entity.enums.FareType;
 import com.boeing.flightservice.entity.enums.FlightStatus;
 import lombok.Builder;
 
@@ -18,11 +19,13 @@ public record FsFlightWithFareDetailsDTO(
         LocalDateTime estimatedArrivalTime,
         LocalDateTime actualArrivalTime, // Khong biet duong tinh nhu the nao
         FlightStatus status,
-        Double flightDurationMinutes,
+        Integer flightDurationMinutes,
         int totalSeats,
         int remainingSeats,
         List<String> occupiedSeats,
-        List<FsDetailedFareDTO> availableFares
+        List<FsDetailedFareDTO> availableFares,
+        Integer carryOnLuggageWeight,
+        Integer checkedBaggageWeight
 ) {
     @Builder
     public record FsAircraftDTO(
@@ -37,10 +40,20 @@ public record FsFlightWithFareDetailsDTO(
             UUID id,
             Double price,
             String name,
-            String seatRange,
+            FareType fareType,
+            List<String> seats,
+            List<String> occupiedSeats,
             int totalSeats,
-            int remainingSeats,
-            List<UUID> benefits
+            List<Benefit> benefits
+    ) {
+    }
+
+    @Builder
+    public record Benefit(
+            UUID id,
+            String name,
+            String description,
+            String iconURL
     ) {
     }
 }

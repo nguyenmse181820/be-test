@@ -14,7 +14,7 @@ public record FlightResponseDTO(
         String destination,
         LocalDateTime departureTime,
         LocalDateTime estimatedArrivalTime,
-        Double flightDurationMinutes,
+        Integer flightDurationMinutes,
         FlightStatus status
 ) {
 }

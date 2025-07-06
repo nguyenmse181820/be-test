@@ -17,14 +17,14 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RouteCreateRequestDTO {
-    
+
     @NotNull(message = "Origin airport ID is required")
     UUID originAirportId;
-    
+
     @NotNull(message = "Destination airport ID is required")
     UUID destinationAirportId;
-    
+
     @NotNull(message = "Estimated duration is required")
     @Positive(message = "Estimated duration must be positive")
-    Double estimatedDurationMinutes;
+    Integer estimatedDurationMinutes;
 }

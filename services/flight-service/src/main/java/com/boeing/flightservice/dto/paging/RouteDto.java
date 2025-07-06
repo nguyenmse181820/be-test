@@ -1,16 +1,11 @@
 package com.boeing.flightservice.dto.paging;
 
-import java.util.UUID;
-
 import com.boeing.flightservice.entity.Route;
 import com.fasterxml.jackson.annotation.JsonFilter;
-
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -22,8 +17,8 @@ public class RouteDto {
     UUID id;
     AirportDto origin;
     AirportDto destination;
-    Double estimatedDurationMinutes;
-    
+    Integer estimatedDurationMinutes;
+
     public static RouteDto fromEntity(Route route) {
         return RouteDto.builder()
                 .id(route.getId())

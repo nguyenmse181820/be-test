@@ -1,5 +1,6 @@
 package com.boeing.bookingservice.config;
 
+import com.boeing.bookingservice.dto.response.ApiResponse;
 import com.boeing.bookingservice.integration.fs.FlightClient;
 import com.boeing.bookingservice.integration.fs.dto.*;
 import com.boeing.bookingservice.integration.ls.LoyaltyClient;
@@ -67,10 +68,7 @@ public class TestConfig {
         LoyaltyClient mockClient = Mockito.mock(LoyaltyClient.class);
 
         // Mock validateVoucher
-        Mockito.when(mockClient.validateVoucher(
-                Mockito.anyString(), 
-                Mockito.any(UUID.class), 
-                Mockito.any(BigDecimal.class)))
+        Mockito.when(mockClient.getUserVoucherById(Mockito.any(UUID.class)))
             .thenReturn(createMockVoucherValidationResponse());
 
         // Mock useVoucher
@@ -218,14 +216,17 @@ public class TestConfig {
         return response;
     }
 
-    private LsVoucherValidationResponseDTO createMockVoucherValidationResponse() {
-        LsVoucherValidationResponseDTO response = new LsVoucherValidationResponseDTO();
-        response.setValid(true);
-        response.setFinalDiscountAmount(BigDecimal.valueOf(100000));
-        response.setVoucherName("WELCOME100K");
-        response.setExpiredAt(LocalDateTime.now().plusDays(30));
-        response.setFailureReason(null);
-        return response;
+    private ApiResponse<LsUserVoucherDTO> createMockVoucherValidationResponse() {
+        LsUserVoucherDTO voucher = new LsUserVoucherDTO();
+        voucher.setCode("WELCOME100K");
+        voucher.setDiscountAmount(BigDecimal.valueOf(100000));
+        voucher.setExpiryDate(LocalDateTime.now().plusDays(30));
+        
+        return ApiResponse.<LsUserVoucherDTO>builder()
+            .success(true)
+            .message("Voucher is valid")
+            .data(voucher)
+            .build();
     }
 
     private LsUseVoucherResponseDTO createMockUseVoucherResponse() {

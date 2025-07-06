@@ -26,17 +26,17 @@ public class RefundRequestController {
     private final RefundRequestRepository refundRequestRepository;
 
     @GetMapping("/pending")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<List<RefundRequest>> getPendingRefundRequests(Authentication authentication) {
-        UUID adminUserId = getUserIdFromAuthentication(authentication);
+        UUID userId = getUserIdFromAuthentication(authentication);
         List<RefundRequest> pendingRequests = refundRequestRepository.findByStatus("PENDING");
         return ResponseEntity.ok(pendingRequests);
     }
     
     @GetMapping("/{refundRequestId}")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<RefundRequest> getRefundRequest(@PathVariable String refundRequestId, Authentication authentication) {
-        UUID adminUserId = getUserIdFromAuthentication(authentication);
+        UUID userId = getUserIdFromAuthentication(authentication);
         return refundRequestRepository.findByRefundRequestId(refundRequestId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -56,16 +56,16 @@ public class RefundRequestController {
     }
 
     @PostMapping("/{refundRequestId}/approve")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<String> approveRefundRequest(
             @PathVariable String refundRequestId,
             Authentication authentication) {
         
-        UUID adminUserId = getUserIdFromAuthentication(authentication);
-        String adminFullName = getFullNameFromAuthentication(authentication);
+        UUID userId = getUserIdFromAuthentication(authentication);
+        String userFullName = getFullNameFromAuthentication(authentication);
         
         try {
-            refundRequestService.updateRefundRequestStatus(refundRequestId, "APPROVED", adminFullName);
+            refundRequestService.updateRefundRequestStatus(refundRequestId, "APPROVED", userFullName);
             return ResponseEntity.ok("Refund request approved successfully");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error approving refund request: " + e.getMessage());
@@ -73,18 +73,18 @@ public class RefundRequestController {
     }
     
     @PostMapping("/{refundRequestId}/complete")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<String> completeRefundRequest(
             @PathVariable String refundRequestId,
             @RequestParam(required = false) String transactionProofUrl,
             @RequestParam(required = false) String notes,
             Authentication authentication) {
         
-        UUID adminUserId = getUserIdFromAuthentication(authentication);
-        String adminFullName = getFullNameFromAuthentication(authentication);
+        UUID userId = getUserIdFromAuthentication(authentication);
+        String userFullName = getFullNameFromAuthentication(authentication);
         
         try {
-            refundRequestService.updateRefundRequestStatus(refundRequestId, "COMPLETED", adminFullName);
+            refundRequestService.updateRefundRequestStatus(refundRequestId, "COMPLETED", userFullName);
 
             if (transactionProofUrl != null || notes != null) {
                 updateAdditionalRefundInfo(refundRequestId, transactionProofUrl, notes);
@@ -97,17 +97,17 @@ public class RefundRequestController {
     }
     
     @PostMapping("/{refundRequestId}/reject")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<String> rejectRefundRequest(
             @PathVariable String refundRequestId,
             @RequestParam(required = false) String notes,
             Authentication authentication) {
         
-        UUID adminUserId = getUserIdFromAuthentication(authentication);
-        String adminFullName = getFullNameFromAuthentication(authentication);
+        UUID userId = getUserIdFromAuthentication(authentication);
+        String userFullName = getFullNameFromAuthentication(authentication);
         
         try {
-            refundRequestService.updateRefundRequestStatus(refundRequestId, "REJECTED", adminFullName);
+            refundRequestService.updateRefundRequestStatus(refundRequestId, "REJECTED", userFullName);
             
             if (notes != null) {
                 updateAdditionalRefundInfo(refundRequestId, null, notes);
@@ -120,7 +120,7 @@ public class RefundRequestController {
     }
 
     @PostMapping("/create")
-    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN', 'STAFF')")
     public ResponseEntity<String> createRefundRequest(
             @RequestParam String bookingReference,
             @RequestParam String reason,
@@ -140,6 +140,23 @@ public class RefundRequestController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error creating refund request: " + e.getMessage());
         }
+    }
+    
+    @GetMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
+    public ResponseEntity<List<RefundRequest>> getAllRefundRequests(
+            @RequestParam(required = false) String status,
+            Authentication authentication) {
+        UUID userId = getUserIdFromAuthentication(authentication);
+        
+        List<RefundRequest> requests;
+        if (status != null && !status.isEmpty()) {
+            requests = refundRequestRepository.findByStatus(status.toUpperCase());
+        } else {
+            requests = refundRequestRepository.findAll();
+        }
+        
+        return ResponseEntity.ok(requests);
     }
     
     private void updateAdditionalRefundInfo(String refundRequestId, String transactionProofUrl, String notes) {
@@ -194,7 +211,7 @@ public class RefundRequestController {
         }
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .filter(authority -> authority.equals("USER") || authority.equals("ADMIN"))
+                .filter(authority -> authority.equals("USER") || authority.equals("ADMIN") || authority.equals("STAFF"))
                 .findFirst()
                 .orElse("USER");
     }

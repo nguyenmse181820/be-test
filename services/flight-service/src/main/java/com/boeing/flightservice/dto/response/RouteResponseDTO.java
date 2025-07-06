@@ -1,15 +1,10 @@
 package com.boeing.flightservice.dto.response;
 
-import java.util.UUID;
-
 import com.boeing.flightservice.entity.Route;
-
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -20,8 +15,8 @@ public class RouteResponseDTO {
     UUID id;
     AirportResponseDTO origin;
     AirportResponseDTO destination;
-    Double estimatedDurationMinutes;
-    
+    Integer estimatedDurationMinutes;
+
     public static RouteResponseDTO fromEntity(Route route) {
         return RouteResponseDTO.builder()
                 .id(route.getId())

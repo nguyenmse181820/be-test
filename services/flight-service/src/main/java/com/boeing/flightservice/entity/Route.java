@@ -40,7 +40,7 @@ public class Route {
     Airport destination;
 
     @Column(name = "estimated_duration_minutes", nullable = false)
-    Double estimatedDurationMinutes;
+    Integer estimatedDurationMinutes;
 
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default

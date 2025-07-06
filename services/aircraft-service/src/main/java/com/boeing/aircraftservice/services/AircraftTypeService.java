@@ -25,9 +25,9 @@ public interface AircraftTypeService {
 
     AircraftTypeResponseDTO deleteAircraftType(UUID AircraftID);
 
-    AircraftTypeResponseDTO createAircraftType(CreateAircraftTypeRequest createAircraftTypeRequest);
+    AircraftTypeResponseDTO createAircraftType(CreateAircraftTypeV2Request createAircraftTypeRequest);
 
-    AircraftTypeResponseDTO updateAircraftType(UpdateAircraftTypeRequest updateAircraftTypeRequest, UUID aircraftID);
+    AircraftTypeResponseDTO updateAircraftType(UpdateAircraftTypeV2Request updateAircraftTypeRequest, UUID aircraftID);
 
     PagingResponse searchAircraftsType(Integer currentPage, Integer pageSize, String model, String manufacturer);
 

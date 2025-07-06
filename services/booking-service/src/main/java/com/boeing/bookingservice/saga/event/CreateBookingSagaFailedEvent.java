@@ -1,7 +1,10 @@
 package com.boeing.bookingservice.saga.event;
 
+import lombok.Builder;
+
 import java.util.UUID;
 
+@Builder
 public record CreateBookingSagaFailedEvent(
         UUID sagaId,
         String bookingReference,

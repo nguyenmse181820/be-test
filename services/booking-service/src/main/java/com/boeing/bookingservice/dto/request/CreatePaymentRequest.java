@@ -8,4 +8,6 @@ public class CreatePaymentRequest {
     private Double amount;
     private String bankCode;
     private String orderDescription;
+    private String paymentMethod;
+    private String clientIpAddress;
 }

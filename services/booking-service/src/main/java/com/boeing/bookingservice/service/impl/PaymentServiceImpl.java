@@ -18,8 +18,6 @@ import com.boeing.bookingservice.service.PaymentService;
 import com.boeing.bookingservice.utils.VNPayUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
@@ -36,32 +34,58 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class PaymentServiceImpl implements PaymentService {    
+public class PaymentServiceImpl implements PaymentService {
     private final VNPAYConfig vnPayConfig;
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
     private final BookingService bookingService;
     private final ApplicationEventPublisher eventPublisher;
-    
+
     @Value("${frontend.url}")
     private String frontendUrl;
 
-    public PaymentServiceImpl(VNPAYConfig vnPayConfig, 
-                             PaymentRepository paymentRepository,
-                             BookingRepository bookingRepository, 
-                             @Lazy BookingService bookingService,
-                             ApplicationEventPublisher eventPublisher) {
+    public PaymentServiceImpl(VNPAYConfig vnPayConfig,
+                              PaymentRepository paymentRepository,
+                              BookingRepository bookingRepository,
+                              @Lazy BookingService bookingService,
+                              ApplicationEventPublisher eventPublisher) {
         this.vnPayConfig = vnPayConfig;
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.bookingService = bookingService;
         this.eventPublisher = eventPublisher;
     }
+
+    @Override
+    @Transactional
+    public Payment createPayment(CreatePaymentRequest request, UUID userId) {
+        // Verify user owns the booking
+        verifyBookingOwnership(request.getBookingReference(), userId);
+        
+        Booking booking = bookingRepository.findByBookingReference(request.getBookingReference())
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found with reference: " + request.getBookingReference()));
+        
+        // Create initial pending payment record
+        Payment payment = Payment.builder()
+                .orderCode(generateOrderCode())
+                .bookingReference(request.getBookingReference())
+                .booking(booking)
+                .amount(request.getAmount())
+                .status(PaymentStatus.PENDING)
+                .paymentType(PaymentType.BOOKING_INITIAL)
+                .currency("VND")
+                .paymentMethod(PaymentMethod.valueOf(request.getPaymentMethod()))
+                .description("Initial payment for booking: " + request.getBookingReference())
+                .build();
+                
+        return paymentRepository.save(payment);
+    }
+    
     @Override
     public String createVNPayPaymentUrl(CreatePaymentRequest request, UUID userId) {
         // Verify user owns the booking
         verifyBookingOwnership(request.getBookingReference(), userId);
-        
+
         PaymentDTO.VNPayResponse response = requestPayment(
                 request.getAmount(),
                 request.getBankCode(),
@@ -205,7 +229,7 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentStatusDTO getPaymentStatus(String bookingReference, UUID userId) {
         // Verify user owns the booking
         verifyBookingOwnership(bookingReference, userId);
-        
+
         Booking booking = bookingRepository.findByBookingReference(bookingReference)
                 .orElseThrow(() -> new PaymentProcessingException("Booking not found: " + bookingReference));
 
@@ -227,7 +251,9 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         return responseBuilder.build();
-    }    private void redirectToSuccessPage(HttpServletResponse response, String txnRef, String transactionNo, String amount) throws IOException {
+    }
+
+    private void redirectToSuccessPage(HttpServletResponse response, String txnRef, String transactionNo, String amount) throws IOException {
         String successUrl = String.format(
                 "%s/payment/success?booking=%s&transaction=%s&amount=%s",
                 frontendUrl, txnRef, transactionNo, amount
@@ -246,10 +272,10 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private void verifyBookingOwnership(String bookingReference, UUID userId) {
-        
+
         Booking booking = bookingRepository.findByBookingReference(bookingReference)
                 .orElseThrow(() -> new PaymentProcessingException("Booking not found: " + bookingReference));
-        
+
         if (!booking.getUserId().equals(userId)) {
             throw new SecurityException("You do not have permission to access this booking");
         }

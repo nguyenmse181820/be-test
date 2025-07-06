@@ -1,73 +1,54 @@
 package com.boeing.flightservice.controller;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.json.MappingJacksonValue;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.boeing.flightservice.annotation.StandardAPIResponses;
 import com.boeing.flightservice.annotation.StandardGetParams;
-import com.boeing.flightservice.dto.request.FsConfirmSeatsRequestDTO;
-import com.boeing.flightservice.dto.request.FsFlightCreateRequestV2;
-import com.boeing.flightservice.dto.request.FsReleaseSeatsRequestDTO;
-import com.boeing.flightservice.dto.response.FlightResponseDTO;
-import com.boeing.flightservice.dto.response.FsConfirmSeatsResponseDTO;
-import com.boeing.flightservice.dto.response.FsFlightWithFareDetailsDTO;
-import com.boeing.flightservice.dto.response.FsReleaseSeatsResponseDTO;
-import com.boeing.flightservice.dto.response.FsSeatsAvailabilityResponseDTO;
+import com.boeing.flightservice.dto.request.*;
+import com.boeing.flightservice.dto.response.*;
+import com.boeing.flightservice.dto.union.Search;
+import com.boeing.flightservice.entity.enums.FareType;
 import com.boeing.flightservice.service.spec.FlightService;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJacksonValue;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Tag(name = "2. Flight", description = "APIs for managing flights")
 @RestController
 @RequiredArgsConstructor
 public class FlightController {
+
     private final FlightService service;
 
     @GetMapping("/api/v1/fs/flights")
-    @Operation(summary = "Get all flights", description = "Get all flights with optional filtering, sorting, and pagination")
+    @Operation(
+            summary = "[DEBUG] Get all flights",
+            description = "Get all flights with optional filtering, sorting, and pagination"
+    )
     @StandardGetParams
     @StandardAPIResponses
-    public MappingJacksonValue getAllBenefits(@RequestParam Map<String, String> params) {
+    public MappingJacksonValue getAllFlights(@RequestParam Map<String, String> params) {
         return service.findAll(params);
     }
 
-//    @PostMapping("/api/v1/fs/flights")
-//    @Operation(summary = "Create a flight", description = "Create a flight")
-//    @StandardAPIResponses
-//    public ResponseEntity<FlightResponseDTO> createFlight(
-//            @RequestBody FsFlightCreateRequest fsFlightCreateRequest
-//    ) {
-//        return ResponseEntity
-//                .status(HttpStatus.CREATED)
-//                .body(
-//                        service.createFlight(
-//                                fsFlightCreateRequest
-//                        )
-//                );
-//    }
-
     @PostMapping("/api/v1/fs/flights")
-    @Operation(summary = "Create a flight with seat class configuration", description = "Create a flight using aircraft seat sections instead of manual seat ranges")
+    @Operation(
+            summary = "Create a flight with seat class configuration",
+            description = "Create a flight using aircraft seat sections instead of manual seat ranges"
+    )
     @StandardAPIResponses
-    public ResponseEntity<FlightResponseDTO> createFlightV2(
-            @RequestBody FsFlightCreateRequestV2 request
+    public ResponseEntity<FlightResponseDTO> createFlight(
+            @RequestBody FsFlightCreateRequest request
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(service.createFlightV2(request));
+                .body(service.createFlight(request));
     }
 
     @GetMapping("/api/v1/fs/flights/{flightId}/seats/check-availability")
@@ -84,6 +65,22 @@ public class FlightController {
                                 flightId,
                                 seatCodes
                         )
+                );
+    }
+
+    @PostMapping("/api/v1/fs/flights/search")
+    @Operation(
+            summary = "Tìm kiếm máy bay",
+            description = "Tìm kiếm máy bay"
+    )
+    @StandardAPIResponses
+    public ResponseEntity<Search.Response> searchFlights(
+            @RequestBody Search.Request request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        service.searchFlights(request)
                 );
     }
 
@@ -136,9 +133,33 @@ public class FlightController {
                 );
     }
 
-    @GetMapping("/api/v1/fs/flights/{flightId}/available-seats-count")
-    @Operation(summary = "Get available seats count for a flight and fare class", description = "Get the number of available seats for a specific flight and fare class")
+    // Deprecated APIs for backward compatibility
+    @GetMapping("/api/v1/fs/aircraft/{aircraftId}/seat-sections")
+    @Operation(
+            summary = "Get aircraft seat sections",
+            description = "Get seat sections/classes available for the specified aircraft",
+            deprecated = true
+    )
     @StandardAPIResponses
+    @Deprecated
+    public ResponseEntity<Map<String, Object>> getAircraftSeatSections(
+            @PathVariable UUID aircraftId
+    ) {
+        Map<FareType, List<String>> seatSections = service.getAircraftSeatSections(aircraftId);
+        Map<String, Object> response = new java.util.HashMap<>();
+        response.put("aircraftId", aircraftId);
+        response.put("seatSections", seatSections);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/api/v1/fs/flights/{flightId}/available-seats-count")
+    @Operation(
+            summary = "Get available seats count for a flight and fare class",
+            description = "Get the number of available seats for a specific flight and fare class",
+            deprecated = true
+    )
+    @StandardAPIResponses
+    @Deprecated
     public ResponseEntity<Map<String, Object>> getAvailableSeatsCount(
             @PathVariable UUID flightId,
             @RequestParam String fareClass
@@ -151,16 +172,39 @@ public class FlightController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/api/v1/fs/aircraft/{aircraftId}/seat-sections")
-    @Operation(summary = "Get aircraft seat sections", description = "Get seat sections/classes available for the specified aircraft")
+    @PostMapping("/api/v1/fs/flights/{flightId}/fares/{fareName}/confirm-sale")
+    @Operation(
+            summary = "Xác nhận đã bán vé và giảm số lượng ghế trống cho hạng vé đó sau khi thanh toán thành công (Saga step).",
+            description = "Xác nhận đã bán vé và giảm số lượng ghế trống cho hạng vé đó sau khi thanh toán thành công (Saga step).",
+            deprecated = true
+    )
     @StandardAPIResponses
-    public ResponseEntity<Map<String, Object>> getAircraftSeatSections(
-            @PathVariable UUID aircraftId
+    @Deprecated
+    public ResponseEntity<FsConfirmFareSaleResponseDTO> confirmFareSale(
+            @PathVariable("flightId") UUID flightId,
+            @PathVariable("fareName") String fareName,
+            @RequestBody FsConfirmFareSaleRequestDTO request
     ) {
-        Map<String, List<String>> seatSections = service.getAircraftSeatSections(aircraftId);
-        Map<String, Object> response = new java.util.HashMap<>();
-        response.put("aircraftId", aircraftId);
-        response.put("seatSections", seatSections);
-        return ResponseEntity.ok(response);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(service.confirmFareSale(flightId, fareName, request));
+    }
+
+    @PostMapping("/api/v1/fs/flights/{flightId}/fares/{fareName}/release")
+    @Operation(
+            summary = "Giải phóng/tăng lại số lượng ghế trống cho hạng vé (khi hủy vé, scheduler hủy booking PENDING_PAYMENT, Saga rollback).",
+            description = "Giải phóng/tăng lại số lượng ghế trống cho hạng vé (khi hủy vé, scheduler hủy booking PENDING_PAYMENT, Saga rollback).",
+            deprecated = true
+    )
+    @StandardAPIResponses
+    @Deprecated
+    public ResponseEntity<FsReleaseFareResponseDTO> releaseFare(
+            @PathVariable("flightId") UUID flightId,
+            @PathVariable("fareName") String fareName,
+            @RequestBody FsReleaseFareRequestDTO request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(service.releaseFare(flightId, fareName, request));
     }
 }

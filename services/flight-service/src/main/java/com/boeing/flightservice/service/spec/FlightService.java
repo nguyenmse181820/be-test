@@ -1,29 +1,38 @@
 package com.boeing.flightservice.service.spec;
 
+import com.boeing.flightservice.dto.request.*;
+import com.boeing.flightservice.dto.response.*;
+import com.boeing.flightservice.dto.union.Search;
+import com.boeing.flightservice.entity.enums.FareType;
+import org.springframework.http.converter.json.MappingJacksonValue;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import org.springframework.http.converter.json.MappingJacksonValue;
-
-import com.boeing.flightservice.dto.request.FsConfirmSeatsRequestDTO;
-import com.boeing.flightservice.dto.request.FsFlightCreateRequestV2;
-import com.boeing.flightservice.dto.request.FsReleaseSeatsRequestDTO;
-import com.boeing.flightservice.dto.response.FlightResponseDTO;
-import com.boeing.flightservice.dto.response.FsConfirmSeatsResponseDTO;
-import com.boeing.flightservice.dto.response.FsFlightWithFareDetailsDTO;
-import com.boeing.flightservice.dto.response.FsReleaseSeatsResponseDTO;
-import com.boeing.flightservice.dto.response.FsSeatsAvailabilityResponseDTO;
 
 public interface FlightService {
     MappingJacksonValue findAll(Map<String, String> params);
 
     FsSeatsAvailabilityResponseDTO checkSeatAvailability(UUID flightId, List<String> seatCodes);
+
     FsFlightWithFareDetailsDTO getFlightDetails(UUID flightId);
+
     FsConfirmSeatsResponseDTO confirmSeat(UUID flightId, FsConfirmSeatsRequestDTO request);
+
     FsReleaseSeatsResponseDTO releaseSeats(UUID flightId, FsReleaseSeatsRequestDTO request);
-//    FlightResponseDTO createFlight(FsFlightCreateRequest fsFlightCreateRequest);
-    FlightResponseDTO createFlightV2(FsFlightCreateRequestV2 request);
-    Map<String, List<String>> getAircraftSeatSections(UUID aircraftId);
+
+    FlightResponseDTO createFlight(FsFlightCreateRequest request);
+
+    Map<FareType, List<String>> getAircraftSeatSections(UUID aircraftId);
+
+    @Deprecated
+    FsReleaseFareResponseDTO releaseFare(UUID flightId, String fareName, FsReleaseFareRequestDTO request);
+
+    @Deprecated
+    FsConfirmFareSaleResponseDTO confirmFareSale(UUID flightId, String fareName, FsConfirmFareSaleRequestDTO request);
+
+    @Deprecated
     int getAvailableSeatsCount(UUID flightId, String fareClass);
+
+    Search.Response searchFlights(Search.Request request);
 }

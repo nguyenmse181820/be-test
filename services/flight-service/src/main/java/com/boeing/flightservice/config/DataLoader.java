@@ -1,457 +1,234 @@
 package com.boeing.flightservice.config;
 
-import com.boeing.flightservice.entity.Airport;
-import com.boeing.flightservice.entity.Benefit;
-import com.boeing.flightservice.repository.AirportRepository;
-import com.boeing.flightservice.repository.BenefitRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.UUID;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Arrays;
-import java.util.List;
+import com.boeing.flightservice.dto.request.RouteCreateRequestDTO;
+import com.boeing.flightservice.dto.union.AirportDTO;
+import com.boeing.flightservice.dto.union.BenefitDTO;
+import com.boeing.flightservice.repository.AirportRepository;
+import com.boeing.flightservice.service.spec.AirportService;
+import com.boeing.flightservice.service.spec.BenefitService;
+import com.boeing.flightservice.service.spec.RouteService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
 public class DataLoader {
 
-    private final BenefitRepository benefitRepository;
     private final AirportRepository airportRepository;
+    private final AirportService airportService;
+    private final RouteService routeService;
+    private final BenefitService benefitService;
 
     @Bean
     public CommandLineRunner initData() {
         return args -> {
-            loadBenefits();
-            loadAirports();
+            if (airportRepository.count() == 0) {
+                log.info("Starting data initialization...");
+                
+                // Create airports first
+                createAirports();
+                
+                // Create routes between airports
+                createRoutes();
+                
+                // Create benefits for seat types
+                createBenefits();
+                
+                log.info("Data initialization completed!");
+            } else {
+                log.info("Data already exists, skipping initialization.");
+            }
         };
     }
-
-    private void loadBenefits() {
-        if (benefitRepository.count() == 0) {
-            log.info("Loading initial flight benefits data...");
-
-            List<Benefit> benefits = Arrays.asList(
-                    Benefit.builder()
-                            .name("Free Checked Baggage")
-                            .description("Includes one free checked bag up to 23kg")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Priority Boarding")
-                            .description("Board the aircraft before general passengers")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Extra Legroom")
-                            .description("Seats with additional legroom for comfort")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("In-Flight Wi-Fi")
-                            .description("Complimentary internet access during flight")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Seat Selection")
-                            .description("Choose your preferred seat at no extra cost")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Premium Meal")
-                            .description("Enhanced dining experience with premium meals")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Lounge Access")
-                            .description("Access to airport lounges with refreshments")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Fast Track Security")
-                            .description("Expedited security screening process")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Flexible Booking")
-                            .description("Change or cancel your booking without fees")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Extra Carry-On")
-                            .description("Additional carry-on baggage allowance")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Miles Earning")
-                            .description("Earn frequent flyer miles with your booking")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Priority Check-In")
-                            .description("Dedicated check-in counters for faster service")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Entertainment System")
-                            .description("Personal entertainment system with movies and music")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Power Outlets")
-                            .description("In-seat power outlets for charging devices")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Complimentary Drinks")
-                            .description("Free beverages including alcoholic drinks")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("24/7 Customer Support")
-                            .description("Round-the-clock customer service assistance")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Travel Insurance")
-                            .description("Complimentary travel insurance coverage")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Upgrade Eligibility")
-                            .description("Eligible for complimentary class upgrades")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Express Baggage")
-                            .description("Priority baggage handling and delivery")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build(),
-
-                    Benefit.builder()
-                            .name("Amenity Kit")
-                            .description("Complimentary amenity kit with travel essentials")
-                            .iconURL("https://picsum.photos/64")
-                            .deleted(false)
-                            .build()
-            );
-
-            benefitRepository.saveAll(benefits);
-            log.info("Successfully loaded {} flight benefits", benefits.size());
-        } else {
-            log.info("Flight benefits data already exists, skipping initialization");
+    
+    private void createAirports() {
+        log.info("Creating airports...");
+        
+        // Ho Chi Minh City Airport (Tan Son Nhat)
+        AirportDTO.CreateRequest hcmAirport = AirportDTO.CreateRequest.builder()
+                .name("Tan Son Nhat International Airport")
+                .code("SGN")
+                .city("Ho Chi Minh City")
+                .country("Vietnam")
+                .timezone("Asia/Ho_Chi_Minh")
+                .latitude(10.8187)
+                .longitude(106.6520)
+                .build();
+        airportService.createAirport(hcmAirport);
+        log.info("Created airport: SGN - Ho Chi Minh City");
+        
+        // Hanoi Airport (Noi Bai)
+        AirportDTO.CreateRequest hanoiAirport = AirportDTO.CreateRequest.builder()
+                .name("Noi Bai International Airport")
+                .code("HAN")
+                .city("Hanoi")
+                .country("Vietnam")
+                .timezone("Asia/Ho_Chi_Minh")
+                .latitude(21.2212)
+                .longitude(105.8072)
+                .build();
+        airportService.createAirport(hanoiAirport);
+        log.info("Created airport: HAN - Hanoi");
+        
+        // Bangkok Airport (Suvarnabhumi)
+        AirportDTO.CreateRequest bangkokAirport = AirportDTO.CreateRequest.builder()
+                .name("Suvarnabhumi Airport")
+                .code("BKK")
+                .city("Bangkok")
+                .country("Thailand")
+                .timezone("Asia/Bangkok")
+                .latitude(13.6810)
+                .longitude(100.7472)
+                .build();
+        airportService.createAirport(bangkokAirport);
+        log.info("Created airport: BKK - Bangkok");
+        
+        // Singapore Airport (Changi)
+        AirportDTO.CreateRequest singaporeAirport = AirportDTO.CreateRequest.builder()
+                .name("Singapore Changi Airport")
+                .code("SIN")
+                .city("Singapore")
+                .country("Singapore")
+                .timezone("Asia/Singapore")
+                .latitude(1.3644)
+                .longitude(103.9915)
+                .build();
+        airportService.createAirport(singaporeAirport);
+        log.info("Created airport: SIN - Singapore");
+        
+        // Kuala Lumpur Airport (KLIA)
+        AirportDTO.CreateRequest klAirport = AirportDTO.CreateRequest.builder()
+                .name("Kuala Lumpur International Airport")
+                .code("KUL")
+                .city("Kuala Lumpur")
+                .country("Malaysia")
+                .timezone("Asia/Kuala_Lumpur")
+                .latitude(2.7456)
+                .longitude(101.7072)
+                .build();
+        airportService.createAirport(klAirport);
+        log.info("Created airport: KUL - Kuala Lumpur");
+        
+        log.info("All airports created successfully!");
+    }
+    
+    private void createRoutes() {
+        log.info("Creating routes...");
+        
+        // We need to get airport IDs after creation to create routes
+        // Since we can't get them directly from createAirport response in this structure,
+        // we'll fetch them from the repository
+        var airports = airportRepository.findAll();
+        
+        UUID hcmId = null, hanoiId = null, bangkokId = null, singaporeId = null, klId = null;
+        
+        for (var airport : airports) {
+            switch (airport.getCode()) {
+                case "SGN" -> hcmId = airport.getId();
+                case "HAN" -> hanoiId = airport.getId();
+                case "BKK" -> bangkokId = airport.getId();
+                case "SIN" -> singaporeId = airport.getId();
+                case "KUL" -> klId = airport.getId();
+            }
+        }
+        
+        // Direct routes from Ho Chi Minh City
+        createRoute(hcmId, hanoiId, 130, "SGN -> HAN");
+        createRoute(hcmId, bangkokId, 90, "SGN -> BKK");
+        createRoute(hcmId, singaporeId, 120, "SGN -> SIN");
+        createRoute(hcmId, klId, 105, "SGN -> KUL");
+        
+        // Direct routes from Hanoi
+        createRoute(hanoiId, hcmId, 130, "HAN -> SGN");
+        createRoute(hanoiId, bangkokId, 150, "HAN -> BKK");
+        createRoute(hanoiId, singaporeId, 210, "HAN -> SIN");
+        createRoute(hanoiId, klId, 180, "HAN -> KUL");
+        
+        // Connecting routes (for transit flights)
+        createRoute(bangkokId, hcmId, 90, "BKK -> SGN");
+        createRoute(bangkokId, hanoiId, 150, "BKK -> HAN");
+        createRoute(bangkokId, singaporeId, 135, "BKK -> SIN");
+        createRoute(bangkokId, klId, 90, "BKK -> KUL");
+        
+        createRoute(singaporeId, hcmId, 120, "SIN -> SGN");
+        createRoute(singaporeId, hanoiId, 210, "SIN -> HAN");
+        createRoute(singaporeId, bangkokId, 135, "SIN -> BKK");
+        createRoute(singaporeId, klId, 75, "SIN -> KUL");
+        
+        createRoute(klId, hcmId, 105, "KUL -> SGN");
+        createRoute(klId, hanoiId, 180, "KUL -> HAN");
+        createRoute(klId, bangkokId, 90, "KUL -> BKK");
+        createRoute(klId, singaporeId, 75, "KUL -> SIN");
+        
+        log.info("All routes created successfully!");
+    }
+    
+    private void createRoute(UUID originId, UUID destinationId, Integer durationMinutes, String description) {
+        try {
+            RouteCreateRequestDTO routeRequest = RouteCreateRequestDTO.builder()
+                    .originAirportId(originId)
+                    .destinationAirportId(destinationId)
+                    .estimatedDurationMinutes(durationMinutes)
+                    .build();
+            routeService.createRoute(routeRequest);
+            log.info("Created route: {}", description);
+        } catch (Exception e) {
+            log.warn("Failed to create route {}: {}", description, e.getMessage());
         }
     }
-
-    private void loadAirports() {
-        if (airportRepository.count() == 0) {
-            log.info("Loading initial airport data...");
-
-            List<Airport> airports = Arrays.asList(
-                    // North America
-                    Airport.builder()
-                            .name("John F. Kennedy International Airport")
-                            .code("JFK")
-                            .city("New York")
-                            .country("United States")
-                            .timezone("America/New_York")
-                            .latitude(40.6413)
-                            .longitude(-73.7781)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Los Angeles International Airport")
-                            .code("LAX")
-                            .city("Los Angeles")
-                            .country("United States")
-                            .timezone("America/Los_Angeles")
-                            .latitude(33.9425)
-                            .longitude(-118.4081)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Toronto Pearson International Airport")
-                            .code("YYZ")
-                            .city("Toronto")
-                            .country("Canada")
-                            .timezone("America/Toronto")
-                            .latitude(43.6777)
-                            .longitude(-79.6248)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Mexico City International Airport")
-                            .code("MEX")
-                            .city("Mexico City")
-                            .country("Mexico")
-                            .timezone("America/Mexico_City")
-                            .latitude(19.4363)
-                            .longitude(-99.0721)
-                            .deleted(false)
-                            .build(),
-
-                    // South America
-                    Airport.builder()
-                            .name("São Paulo-Guarulhos International Airport")
-                            .code("GRU")
-                            .city("São Paulo")
-                            .country("Brazil")
-                            .timezone("America/Sao_Paulo")
-                            .latitude(-23.4356)
-                            .longitude(-46.4731)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Jorge Newbery Airfield")
-                            .code("AEP")
-                            .city("Buenos Aires")
-                            .country("Argentina")
-                            .timezone("America/Argentina/Buenos_Aires")
-                            .latitude(-34.5592)
-                            .longitude(-58.4156)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("El Dorado International Airport")
-                            .code("BOG")
-                            .city("Bogotá")
-                            .country("Colombia")
-                            .timezone("America/Bogota")
-                            .latitude(4.7016)
-                            .longitude(-74.1469)
-                            .deleted(false)
-                            .build(),
-
-                    // Europe
-                    Airport.builder()
-                            .name("Heathrow Airport")
-                            .code("LHR")
-                            .city("London")
-                            .country("United Kingdom")
-                            .timezone("Europe/London")
-                            .latitude(51.4700)
-                            .longitude(-0.4543)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Charles de Gaulle Airport")
-                            .code("CDG")
-                            .city("Paris")
-                            .country("France")
-                            .timezone("Europe/Paris")
-                            .latitude(49.0097)
-                            .longitude(2.5479)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Frankfurt Airport")
-                            .code("FRA")
-                            .city("Frankfurt")
-                            .country("Germany")
-                            .timezone("Europe/Berlin")
-                            .latitude(50.0379)
-                            .longitude(8.5622)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Amsterdam Airport Schiphol")
-                            .code("AMS")
-                            .city("Amsterdam")
-                            .country("Netherlands")
-                            .timezone("Europe/Amsterdam")
-                            .latitude(52.3105)
-                            .longitude(4.7683)
-                            .deleted(false)
-                            .build(),
-
-                    // Asia
-                    Airport.builder()
-                            .name("Tokyo Haneda Airport")
-                            .code("HND")
-                            .city("Tokyo")
-                            .country("Japan")
-                            .timezone("Asia/Tokyo")
-                            .latitude(35.5494)
-                            .longitude(139.7798)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Singapore Changi Airport")
-                            .code("SIN")
-                            .city("Singapore")
-                            .country("Singapore")
-                            .timezone("Asia/Singapore")
-                            .latitude(1.3644)
-                            .longitude(103.9915)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Beijing Capital International Airport")
-                            .code("PEK")
-                            .city("Beijing")
-                            .country("China")
-                            .timezone("Asia/Shanghai")
-                            .latitude(40.0799)
-                            .longitude(116.6031)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Indira Gandhi International Airport")
-                            .code("DEL")
-                            .city("New Delhi")
-                            .country("India")
-                            .timezone("Asia/Kolkata")
-                            .latitude(28.5562)
-                            .longitude(77.1000)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Dubai International Airport")
-                            .code("DXB")
-                            .city("Dubai")
-                            .country("United Arab Emirates")
-                            .timezone("Asia/Dubai")
-                            .latitude(25.2532)
-                            .longitude(55.3657)
-                            .deleted(false)
-                            .build(),
-
-                    // Africa
-                    Airport.builder()
-                            .name("O.R. Tambo International Airport")
-                            .code("JNB")
-                            .city("Johannesburg")
-                            .country("South Africa")
-                            .timezone("Africa/Johannesburg")
-                            .latitude(-26.1367)
-                            .longitude(28.2411)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Cairo International Airport")
-                            .code("CAI")
-                            .city("Cairo")
-                            .country("Egypt")
-                            .timezone("Africa/Cairo")
-                            .latitude(30.1219)
-                            .longitude(31.4056)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Mohammed V International Airport")
-                            .code("CMN")
-                            .city("Casablanca")
-                            .country("Morocco")
-                            .timezone("Africa/Casablanca")
-                            .latitude(33.3675)
-                            .longitude(-7.5898)
-                            .deleted(false)
-                            .build(),
-
-                    // Oceania
-                    Airport.builder()
-                            .name("Sydney Kingsford Smith Airport")
-                            .code("SYD")
-                            .city("Sydney")
-                            .country("Australia")
-                            .timezone("Australia/Sydney")
-                            .latitude(-33.9399)
-                            .longitude(151.1753)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Auckland Airport")
-                            .code("AKL")
-                            .city("Auckland")
-                            .country("New Zealand")
-                            .timezone("Pacific/Auckland")
-                            .latitude(-37.0082)
-                            .longitude(174.7850)
-                            .deleted(false)
-                            .build(),
-
-                    // Additional major hubs
-                    Airport.builder()
-                            .name("Istanbul Airport")
-                            .code("IST")
-                            .city("Istanbul")
-                            .country("Turkey")
-                            .timezone("Europe/Istanbul")
-                            .latitude(41.2753)
-                            .longitude(28.7519)
-                            .deleted(false)
-                            .build(),
-
-                    Airport.builder()
-                            .name("Hamad International Airport")
-                            .code("DOH")
-                            .city("Doha")
-                            .country("Qatar")
-                            .timezone("Asia/Qatar")
-                            .latitude(25.2731)
-                            .longitude(51.6083)
-                            .deleted(false)
-                            .build()
-            );
-
-            airportRepository.saveAll(airports);
-            log.info("Successfully loaded {} airports", airports.size());
-        } else {
-            log.info("Airport data already exists, skipping initialization");
+    
+    private void createBenefits() {
+        log.info("Creating flight benefits...");
+        
+        // Economy Class Benefits
+        createBenefit("Free Baggage Allowance", "23kg checked baggage included in economy class", "/icons/baggage.svg");
+        createBenefit("In-Flight Meal", "Complimentary meal service during flight", "/icons/meal.svg");
+        createBenefit("Seat Selection", "Standard seat selection available", "/icons/seat.svg");
+        
+        // Business Class Benefits  
+        createBenefit("Priority Check-in", "Dedicated check-in counters for faster processing", "/icons/priority.svg");
+        createBenefit("Lounge Access", "Access to premium airport lounges", "/icons/lounge.svg");
+        createBenefit("Premium Dining", "Multi-course gourmet meal with wine selection", "/icons/dining.svg");
+        createBenefit("Lie-flat Seats", "Fully reclining seats that convert to beds", "/icons/bed.svg");
+        createBenefit("Priority Boarding", "Board the aircraft before general passengers", "/icons/boarding.svg");
+        createBenefit("Extra Baggage", "40kg checked baggage allowance", "/icons/extra-baggage.svg");
+        
+        // First Class Benefits
+        createBenefit("Concierge Service", "Personal assistance throughout your journey", "/icons/concierge.svg");
+        createBenefit("Private Suite", "Enclosed private cabin with sliding door", "/icons/suite.svg");
+        createBenefit("Chef Service", "On-demand dining prepared by onboard chef", "/icons/chef.svg");
+        createBenefit("Spa Services", "In-flight massage and wellness treatments", "/icons/spa.svg");
+        createBenefit("Chauffeur Service", "Ground transportation to and from airport", "/icons/car.svg");
+        
+        // General Premium Benefits
+        createBenefit("Free WiFi", "High-speed internet access throughout flight", "/icons/wifi.svg");
+        createBenefit("Entertainment System", "Personal screen with movies, TV shows, and games", "/icons/entertainment.svg");
+        createBenefit("Fast Track Security", "Expedited security screening process", "/icons/security.svg");
+        createBenefit("Flexible Rebooking", "Change your flight without additional fees", "/icons/calendar.svg");
+        createBenefit("24/7 Support", "Round-the-clock customer service assistance", "/icons/support.svg");
+        
+        log.info("All benefits created successfully!");
+    }
+    
+    private void createBenefit(String name, String description, String iconURL) {
+        try {
+            BenefitDTO.CreateRequest benefitRequest = BenefitDTO.CreateRequest.builder()
+                    .name(name)
+                    .description(description)
+                    .iconURL(iconURL)
+                    .build();
+            benefitService.createBenefit(benefitRequest);
+            log.info("Created benefit: {}", name);
+        } catch (Exception e) {
+            log.warn("Failed to create benefit {}: {}", name, e.getMessage());
         }
     }
 }

@@ -21,8 +21,16 @@ public enum SagaStep {
     POINTS_EARNED,
     AWAITING_NS_NOTIFICATION_RESPONSE,
     COMPLETED_SUCCESSFULLY,
+    
+    // Multi-segment booking specific steps
+    MULTI_SEGMENT_FARE_AVAILABILITY_CHECKED,
+    MULTI_SEGMENT_SEAT_AVAILABILITY_CHECKED,
+    AWAITING_MULTI_SEGMENT_PENDING_BOOKING_CREATION,
+    
+    // Failure states
     FAILED_PROCESSING,
     FAILED_FARE_UNAVAILABLE,
+    FAILED_FARE_AVAILABILITY_CHECK,
     FAILED_SEAT_UNAVAILABLE,
     FAILED_INVALID_VOUCHER,    
     FAILED_PAYMENT,
@@ -33,10 +41,12 @@ public enum SagaStep {
     FAILED_VNPAY_URL_GENERATION,
     CANCELLED_CLIENT_TIMEOUT,
     COMPENSATING_REFUND_PENDING,
-    COMPENSATED_REFUND_COMPLETED;    
+    COMPENSATED_REFUND_COMPLETED,
+    FAILED_CIRCUIT_BREAKER;    
     public boolean isTerminalState() {
         return this == COMPLETED_SUCCESSFULLY ||
                 this == FAILED_FARE_UNAVAILABLE ||
+                this == FAILED_FARE_AVAILABILITY_CHECK ||
                 this == FAILED_SEAT_UNAVAILABLE ||
                 this == FAILED_FETCH_FLIGHT_DETAILS ||
                 this == FAILED_VNPAY_URL_GENERATION ||
@@ -44,6 +54,7 @@ public enum SagaStep {
                 this == FAILED_SEAT_CONFIRMATION ||
                 this == FAILED_PROCESSING ||
                 this == CANCELLED_CLIENT_TIMEOUT ||
-                this == COMPENSATED_REFUND_COMPLETED;
+                this == COMPENSATED_REFUND_COMPLETED ||
+                this == FAILED_CIRCUIT_BREAKER;
     }
 }

@@ -11,15 +11,26 @@ import com.boeing.bookingservice.saga.command.BookingPassengerInfoDTO;
 import com.boeing.bookingservice.integration.ls.dto.LsUserVoucherDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Service for managing booking-related operations.
+ * Transaction management is handled at the implementation level.
+ */
 public interface BookingService {
 
-    BookingInitiatedResponseDTO initiateBookingCreationSaga(CreateBookingRequestDTO createBookingRequest, UUID userId, String clientIpAddress);    @Transactional
+    /**
+     * Initiates the booking creation saga process
+     */
+    BookingInitiatedResponseDTO initiateBookingCreationSaga(CreateBookingRequestDTO createBookingRequest, UUID userId, String clientIpAddress);
+    
+    /**
+     * Creates a pending booking in the database for a single flight segment
+     */
     Booking createPendingBookingInDatabase(
             UUID bookingId,
             String bookingReferenceForDisplay,
@@ -37,6 +48,26 @@ public interface BookingService {
             String snapshotDestinationAirportCode,
             LocalDateTime snapshotDepartureTime,
             LocalDateTime snapshotArrivalTime,
+            String paymentMethodFromRequest,
+            String clientIpAddress
+    );
+    
+    /**
+     * Creates a pending booking in the database for multiple flight segments
+     */
+    Booking createPendingMultiSegmentBookingInDatabase(
+            UUID bookingId,
+            String bookingReferenceForDisplay,
+            List<UUID> flightIds,
+            List<PassengerInfoDTO> passengerInfosFromRequest,
+            String selectedFareNameFromRequest,
+            Map<String, List<String>> selectedSeatsByFlight,
+            UUID userId,
+            Double totalAmount,
+            Double discountAmount,
+            String appliedVoucherCode,
+            LocalDateTime paymentDeadline,
+            List<Map<String, Object>> flightDetails,
             String paymentMethodFromRequest,
             String clientIpAddress
     );

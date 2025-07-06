@@ -39,6 +39,9 @@ public class RabbitMQConfig {
 
     @Value("${app.rabbitmq.queues.internalSeatAvailabilityChecked}")
     private String internalSeatAvailabilityCheckedQueueName;
+    
+    @Value("${app.rabbitmq.queues.internalCreateMultiSegmentPendingBookingCmd}")
+    private String internalCreateMultiSegmentPendingBookingCmdQueueName;
 
     @Value("${app.rabbitmq.routingKeys.internalFareCheckedEvent}")
     private String RK_INTERNAL_FARE_CHECKED_EVENT;
@@ -54,6 +57,12 @@ public class RabbitMQConfig {
 
     @Value("${app.rabbitmq.routingKeys.internalSeatAvailabilityCheckedEvent}")
     private String RK_INTERNAL_SEAT_AVAILABILITY_CHECKED_EVENT;
+
+    @Value("${app.rabbitmq.routingKeys.internalCreateMultiSegmentPendingBookingCmdKey}")
+    private String RK_INTERNAL_CREATE_MULTI_SEGMENT_PENDING_BOOKING_CMD_KEY;
+
+    @Value("${app.rabbitmq.routingKeys.sagaCreateBookingFailedEvent}")
+    private String RK_SAGA_CREATE_BOOKING_FAILED_EVENT;
 
     @Bean
     public MessageConverter jsonMessageConverter() {
@@ -117,6 +126,11 @@ public class RabbitMQConfig {
     public Queue internalSeatAvailabilityCheckedQueue() {
         return new Queue(internalSeatAvailabilityCheckedQueueName, true);
     }
+    
+    @Bean
+    public Queue internalCreateMultiSegmentPendingBookingCmdQueue() {
+        return new Queue(internalCreateMultiSegmentPendingBookingCmdQueueName, true);
+    }
 
     @Bean
     public Binding internalFareCheckedBinding(Queue internalFareCheckedQueue, TopicExchange eventsExchange) {
@@ -146,7 +160,7 @@ public class RabbitMQConfig {
     @Bean
     public Binding sagaCreateBookingFailedBinding(Queue sagaCreateBookingFailedQueue, TopicExchange eventsExchange) {
         return BindingBuilder.bind(sagaCreateBookingFailedQueue).to(eventsExchange)
-                .with("${app.rabbitmq.routingKeys.sagaCreateBookingFailedEvent}");
+                .with(RK_SAGA_CREATE_BOOKING_FAILED_EVENT);
     }
 
     @Bean
@@ -155,5 +169,11 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(internalSeatAvailabilityCheckedQueue).to(eventsExchange)
                 .with(RK_INTERNAL_SEAT_AVAILABILITY_CHECKED_EVENT);
     }
-
+    
+    @Bean
+    public Binding internalCreateMultiSegmentPendingBookingCmdBinding(Queue internalCreateMultiSegmentPendingBookingCmdQueue,
+            TopicExchange commandsExchange) {
+        return BindingBuilder.bind(internalCreateMultiSegmentPendingBookingCmdQueue).to(commandsExchange)
+                .with(RK_INTERNAL_CREATE_MULTI_SEGMENT_PENDING_BOOKING_CMD_KEY);
+    }
 }

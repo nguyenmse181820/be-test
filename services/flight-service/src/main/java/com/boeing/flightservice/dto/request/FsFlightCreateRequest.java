@@ -1,5 +1,6 @@
 package com.boeing.flightservice.dto.request;
 
+import com.boeing.flightservice.entity.enums.FareType;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
@@ -10,17 +11,16 @@ import java.util.UUID;
 public record FsFlightCreateRequest(
         String code,
         UUID aircraftId,
-        UUID destinationId,
-        UUID originId,
+        UUID routeId,
         LocalDateTime departureTime,
-        List<FlightFareRequest> fares
+        List<SeatClassFareRequest> seatClassFares
 ) {
     @Builder
-    public record FlightFareRequest(
+    public record SeatClassFareRequest(
+            FareType fareType,
             Double minPrice,
             Double maxPrice,
-            String name,
-            String seatRange,
+            String name, // Custom fare name for this seat class
             List<UUID> benefits
     ) {
     }

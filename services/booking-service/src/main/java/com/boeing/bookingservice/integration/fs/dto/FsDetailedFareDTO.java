@@ -26,4 +26,5 @@ public class FsDetailedFareDTO {
     private String baggageAllowance;
     private FsFareRuleDTO fareRules;
     private List<UUID> benefits;
+    private List<String> conditions;
 }

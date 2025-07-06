@@ -29,6 +29,23 @@ public class Flight {
     @Column(name = "aircraft_id")
     UUID aircraftId;
 
+    @Column(name = "departure_time")
+    LocalDateTime departureTime;
+
+    @Column(name = "estimated_arrival_time")
+    LocalDateTime estimatedArrivalTime;
+
+    @Column(name = "flight_duration_minutes")
+    Integer flightDurationMinutes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "flight_status", nullable = false)
+    FlightStatus status;
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    Boolean deleted = false;
+
     @ManyToOne
     @JoinColumn(name = "destination_airport_id")
     Airport destination;
@@ -37,24 +54,9 @@ public class Flight {
     @JoinColumn(name = "origin_airport_id")
     Airport origin;
 
-    @Column(name = "departure_time")
-    LocalDateTime departureTime;
-
-    @Column(name = "estimated_arrival_time")
-    LocalDateTime estimatedArrivalTime;
-
-    @Column(name = "flight_duration_minutes")
-    Double flightDurationMinutes;
-
-    FlightStatus status;
-
     @OneToMany(mappedBy = "flight", cascade = CascadeType.ALL)
     List<FlightFare> fares;
 
-    @Column(name = "is_deleted", nullable = false)
-    @Builder.Default
-    Boolean deleted = false;
-
-    @OneToMany(mappedBy = "flight")
+    @OneToMany(mappedBy = "flight", cascade = CascadeType.ALL)
     List<Seat> occupiedSeats;
 }

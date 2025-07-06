@@ -12,9 +12,5 @@ import java.util.UUID;
 @Repository
 public interface SeatRepository extends JpaRepository<Seat, UUID>, JpaSpecificationExecutor<Seat> {
     Optional<Seat> findBySeatCodeAndFlightIdAndDeleted(String seatCode, UUID flightId, Boolean deleted);
-
-    List<Seat> findByFlightId(UUID flightId);
-
     List<Seat> findByFlightIdAndDeleted(UUID flightId, Boolean deleted);
-
 }

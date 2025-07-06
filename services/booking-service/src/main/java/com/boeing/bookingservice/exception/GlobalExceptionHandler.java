@@ -1,6 +1,7 @@
 package com.boeing.bookingservice.exception;
 
 import com.boeing.bookingservice.dto.response.ApiResponse;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -131,6 +132,17 @@ public class GlobalExceptionHandler {
                 .build();
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleCircuitBreakerException(CallNotPermittedException ex, WebRequest request) {
+        log.error("Circuit breaker is open: {} on request: {}", ex.getMessage(), request.getDescription(false));
+        ApiResponse<Object> errorResponse = ApiResponse.builder()
+                .success(false)
+                .message("Service is temporarily unavailable. Please try again later.")
+                .errorCode(HttpStatus.SERVICE_UNAVAILABLE.value())
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     /**

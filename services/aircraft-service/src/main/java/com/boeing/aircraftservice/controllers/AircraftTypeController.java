@@ -2,7 +2,9 @@ package com.boeing.aircraftservice.controllers;
 
 import com.boeing.aircraftservice.configurations.ApiVersion;
 import com.boeing.aircraftservice.dtos.request.CreateAircraftTypeRequest;
+import com.boeing.aircraftservice.dtos.request.CreateAircraftTypeV2Request;
 import com.boeing.aircraftservice.dtos.request.UpdateAircraftTypeRequest;
+import com.boeing.aircraftservice.dtos.request.UpdateAircraftTypeV2Request;
 import com.boeing.aircraftservice.dtos.response.AircraftResponseDTO;
 import com.boeing.aircraftservice.dtos.response.AircraftTypeResponseDTO;
 import com.boeing.aircraftservice.dtos.response.ObjectResponse;
@@ -67,7 +69,7 @@ public class AircraftTypeController {
      * @return list or empty
      */
     @Operation(summary = "Get all aircraft-type active", description = "Retrieves all aircraft-type have status is active")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('USER') or hasRole('STAFF')")
+//    @PreAuthorize("hasRole('ADMIN') or hasRole('USER') or hasRole('STAFF')")
     @GetMapping("/active")
     public ResponseEntity<PagingResponse> getAllAircraftTypeActive(@RequestParam(value = "currentPage", required = false) Integer currentPage,
                                                                @RequestParam(value = "pageSize", required = false) Integer pageSize) {
@@ -169,9 +171,9 @@ public class AircraftTypeController {
      * @return AircraftType or null
      */
     @Operation(summary = "Create AircraftType", description = "Create AircraftType")
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("")
-    public ResponseEntity<ObjectResponse> createAircraftType(@Valid @RequestBody CreateAircraftTypeRequest createAircraftTypeRequest) {
+    public ResponseEntity<ObjectResponse> createAircraftType(@Valid @RequestBody CreateAircraftTypeV2Request createAircraftTypeRequest) {
         try {
             AircraftTypeResponseDTO aircraftType = aircraftTypeService.createAircraftType(createAircraftTypeRequest);
             return ResponseEntity.status(HttpStatus.OK).body(new ObjectResponse("Success", "Create AircraftType successfully", aircraftType));
@@ -194,9 +196,9 @@ public class AircraftTypeController {
      * @return AircraftType or null
      */
     @Operation(summary = "Update AircraftType", description = "Update AircraftType")
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ObjectResponse> updateAircraftType(@PathVariable("id") UUID id, @RequestBody UpdateAircraftTypeRequest updateAircraftTypeRequest) {
+    public ResponseEntity<ObjectResponse> updateAircraftType(@PathVariable("id") UUID id, @RequestBody UpdateAircraftTypeV2Request updateAircraftTypeRequest) {
         try {
             AircraftTypeResponseDTO aircraftType = aircraftTypeService.updateAircraftType(updateAircraftTypeRequest, id);
             if (aircraftType != null) {
@@ -225,7 +227,7 @@ public class AircraftTypeController {
      * @return AircraftType or null
      */
     @Operation(summary = "Delete AircraftType", description = "Delete AircraftType by AircraftType id set delete = true")
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ObjectResponse> deleteAircraftTypeByID(@PathVariable("id") UUID id) {
         try {
@@ -250,8 +252,8 @@ public class AircraftTypeController {
      * @return AircraftType or null
      */
     @Operation(summary = "Restore AircraftType", description = "Restore AircraftType by AircraftType id set delete = false")
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
-    @PostMapping("/{id}/restore")
+//    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PutMapping("/{id}/restore")
     public ResponseEntity<ObjectResponse> unDeleteAircraftTypeByID(@PathVariable("id") UUID id) {
         try {
             AircraftTypeResponseDTO aircraftType = aircraftTypeService.unDeleteAircraftType(id);

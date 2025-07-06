@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -18,8 +19,10 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateBookingRequestDTO {
-    @NotNull(message = "Flight ID cannot be null")
     private UUID flightId;
+
+    @NotEmpty(message = "Flight IDs list cannot be empty")
+    private List<UUID> flightIds;
 
     @NotBlank(message = "Selected fare name cannot be blank")
     private String selectedFareName;
@@ -29,9 +32,12 @@ public class CreateBookingRequestDTO {
     @Valid
     private List<PassengerInfoDTO> passengers;
 
-    // Seat selections for passengers (optional - if not provided, seats will be auto-assigned)
     @Valid
     private List<SeatSelectionDTO> seatSelections;
+    
+    // Seat selections mapped by flight segment for multi-segment bookings
+    // Key is the flight index ("0", "1", etc.), value is list of seat codes for each passenger
+    private Map<String, List<String>> selectedSeatsByFlight;
 
     private String voucherCode;
 

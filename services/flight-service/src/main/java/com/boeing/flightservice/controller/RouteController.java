@@ -60,10 +60,10 @@ public class RouteController {
     @GetMapping("/api/v1/fs/routes/duration")
     @Operation(summary = "Get estimated duration between airports", description = "Get the estimated flight duration between two airports")
     @StandardAPIResponses
-    public ResponseEntity<Double> getEstimatedDuration(
+    public ResponseEntity<?> getEstimatedDuration(
             @RequestParam UUID originAirportId,
             @RequestParam UUID destinationAirportId) {
-        Double duration = routeService.getEstimatedDuration(originAirportId, destinationAirportId);
+        Integer duration = routeService.getEstimatedDuration(originAirportId, destinationAirportId);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(duration);

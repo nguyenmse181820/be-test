@@ -1,15 +1,8 @@
 package com.boeing.loyalty.service;
 
-import com.boeing.loyalty.dto.voucher.CreateVoucherTemplateRequestDTO;
-import com.boeing.loyalty.dto.voucher.UpdateVoucherTemplateRequestDTO;
-import com.boeing.loyalty.dto.voucher.VoucherTemplateListResponseDTO;
-import com.boeing.loyalty.dto.voucher.VoucherTemplateResponseDTO;
-import com.boeing.loyalty.dto.voucher.UserVoucherResponseDTO;
-import com.boeing.loyalty.entity.VoucherTemplate;
-import com.boeing.loyalty.entity.enums.VoucherStatus;
-import com.boeing.loyalty.exception.BadRequestException;
-import com.boeing.loyalty.repository.VoucherTemplateRepository;
-import lombok.RequiredArgsConstructor;
+import java.util.Collections;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +10,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
+import com.boeing.loyalty.dto.voucher.CreateVoucherTemplateRequestDTO;
+import com.boeing.loyalty.dto.voucher.UpdateVoucherTemplateRequestDTO;
+import com.boeing.loyalty.dto.voucher.UserVoucherResponseDTO;
+import com.boeing.loyalty.dto.voucher.VoucherTemplateListResponseDTO;
+import com.boeing.loyalty.dto.voucher.VoucherTemplateResponseDTO;
+import com.boeing.loyalty.entity.VoucherTemplate;
+import com.boeing.loyalty.entity.enums.VoucherStatus;
+import com.boeing.loyalty.exception.BadRequestException;
+import com.boeing.loyalty.repository.VoucherTemplateRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -109,19 +112,21 @@ public class VoucherTemplateService {
                 .status(template.getStatus().name())
                 .createdAt(template.getCreatedAt())
                 .updatedAt(template.getUpdatedAt())
-                .userVouchers(template.getUserVouchers().stream()
-                        .map(userVoucher -> UserVoucherResponseDTO.builder()
-                                .id(userVoucher.getId())
-                                .membershipId(userVoucher.getMembership().getId())
-                                .code(userVoucher.getCode())
-                                .discountAmount(userVoucher.getDiscountAmount())
-                                .isUsed(userVoucher.getIsUsed())
-                                .usedAt(userVoucher.getUsedAt())
-                                .expiresAt(userVoucher.getExpiresAt())
-                                .createdAt(userVoucher.getCreatedAt())
-                                .updatedAt(userVoucher.getUpdatedAt())
-                                .build())
-                        .toList())
+                .userVouchers(template.getUserVouchers() != null ? 
+                        template.getUserVouchers().stream()
+                                .map(userVoucher -> UserVoucherResponseDTO.builder()
+                                        .id(userVoucher.getId())
+                                        .membershipId(userVoucher.getMembership().getId())
+                                        .code(userVoucher.getCode())
+                                        .discountAmount(userVoucher.getDiscountAmount())
+                                        .isUsed(userVoucher.getIsUsed())
+                                        .usedAt(userVoucher.getUsedAt())
+                                        .expiresAt(userVoucher.getExpiresAt())
+                                        .createdAt(userVoucher.getCreatedAt())
+                                        .updatedAt(userVoucher.getUpdatedAt())
+                                        .build())
+                                .toList() : 
+                        Collections.emptyList())
                 .build();
     }
 } 

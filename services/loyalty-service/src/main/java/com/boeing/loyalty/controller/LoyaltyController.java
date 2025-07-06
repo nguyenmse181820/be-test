@@ -24,8 +24,8 @@ public class LoyaltyController {
 
     @Operation(summary = "Get all vouchers for a user", description = "Retrieves all available vouchers for a specific user")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved vouchers"),
-        @ApiResponse(responseCode = "400", description = "User not found")
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved vouchers"),
+            @ApiResponse(responseCode = "400", description = "User not found")
     })
     @GetMapping("/{userId}/vouchers")
     public ResponseEntity<APIResponse> getAllVoucher(
@@ -37,13 +37,13 @@ public class LoyaltyController {
 
     @Operation(summary = "Earn loyalty points", description = "Adds loyalty points to a user's account based on their spending")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Points earned successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request"),
-        @ApiResponse(responseCode = "400", description = "User not found")
+            @ApiResponse(responseCode = "200", description = "Points earned successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request"),
+            @ApiResponse(responseCode = "400", description = "User not found")
     })
     @PostMapping("/points/earn")
     public ResponseEntity<APIResponse> earnPoints(
-            @Parameter(description = "Earn points request details", required = true) 
+            @Parameter(description = "Earn points request details", required = true)
             @RequestBody EarnPointsRequestDTO requestDTO) {
         return ResponseEntity.ok(APIResponse.builder()
                 .data(loyaltyService.earnPoints(requestDTO))
@@ -52,13 +52,13 @@ public class LoyaltyController {
 
     @Operation(summary = "Use a voucher", description = "Marks a voucher as used and applies its benefits")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Voucher used successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid or already used voucher"),
-        @ApiResponse(responseCode = "400", description = "Voucher not found")
+            @ApiResponse(responseCode = "200", description = "Voucher used successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid or already used voucher"),
+            @ApiResponse(responseCode = "400", description = "Voucher not found")
     })
     @PostMapping("/vouchers/{voucherCode}/use")
     public ResponseEntity<APIResponse> useVoucher(
-            @Parameter(description = "Voucher code to use", required = true) 
+            @Parameter(description = "Voucher code to use", required = true)
             @PathVariable String voucherCode) {
         return ResponseEntity.ok(APIResponse.builder()
                 .data(loyaltyService.useVoucher(voucherCode))
@@ -67,13 +67,13 @@ public class LoyaltyController {
 
     @Operation(summary = "Adjust points for a booking", description = "Adjusts loyalty points for a specific booking")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Points adjusted successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid booking ID"),
-        @ApiResponse(responseCode = "400", description = "Booking not found")
+            @ApiResponse(responseCode = "200", description = "Points adjusted successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid booking ID"),
+            @ApiResponse(responseCode = "400", description = "Booking not found")
     })
     @PostMapping("/points/adjust/{bookingId}")
     public ResponseEntity<APIResponse> adjustPoints(
-            @Parameter(description = "Booking ID for points adjustment", required = true) 
+            @Parameter(description = "Booking ID for points adjustment", required = true)
             @PathVariable String bookingId) {
         return ResponseEntity.ok(APIResponse.builder()
                 .data(loyaltyService.adjustPoints(bookingId))

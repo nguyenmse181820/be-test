@@ -3,6 +3,31 @@ spring:
     import: optional:configserver:http://localhost:8888
   application:
     name: booking-service
+    
+# RabbitMQ Configuration
+app:
+  rabbitmq:
+    exchanges:
+      events: booking-events-exchange
+      commands: booking-commands-exchange
+    queues:
+      internalFareChecked: internal-fare-checked-queue
+      internalSeatAvailabilityChecked: internal-seat-availability-checked-queue
+      internalSeatsChecked: internal-seats-checked-queue
+      internalVoucherValidated: internal-voucher-validated-queue
+      internalBookingCreatedPendingPayment: internal-booking-created-pending-payment-queue
+      internalPaymentCompleted: internal-payment-completed-queue
+      internalCreatePendingBookingCmd: internal-create-pending-booking-cmd-queue
+      internalCreateMultiSegmentPendingBookingCmd: internal-create-multi-segment-pending-booking-cmd-queue
+      sagaCreateBookingFailed: saga-create-booking-failed-queue
+    routingKeys:
+      internalFareCheckedEvent: internal.fare.checked
+      internalSeatAvailabilityCheckedEvent: internal.seat.availability.checked
+      internalCreatePendingBookingCmdKey: internal.create.pending.booking
+      internalCreateMultiSegmentPendingBookingCmdKey: internal.create.multi-segment.pending.booking
+      sagaCreateBookingFailedEvent: saga.create.booking.failed
+      internalBookingCreatedEvent: internal.booking.created
+      seatConfirmationResponse: seat.confirmation.response
 
 # Service URLs configuration
 services:
@@ -18,3 +43,50 @@ services:
 # Frontend configuration
 frontend:
   url: ${FRONTEND_URL:http://localhost:5173}
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      flightServiceCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+        registerHealthIndicator: true
+        allowHealthIndicatorToFail: false
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - feign.FeignException
+          - java.util.concurrent.TimeoutException
+          - java.io.IOException
+          - com.boeing.bookingservice.exception.SagaProcessingException
+  retry:
+    instances:
+      flightServiceRetry:
+        maxAttempts: 3
+        waitDuration: 1000
+        retryExceptions:
+          - feign.RetryableException
+          - java.util.concurrent.TimeoutException
+          - java.io.IOException
+
+# Actuator for circuit breaker monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,retries
+      base-path: /actuator
+  health:
+    circuitbreakers:
+      enabled: true
+    retries:
+      enabled: true
+      
+# Server context path configuration
+server:
+  servlet:
+    context-path: /booking-service

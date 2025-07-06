@@ -32,7 +32,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     private final List<String> NON_USER = List.of(
             "/air-craft/api/v1/public/**", 
             "/air-craft/api/v1/aircraft/**", 
-            "/air-craft/api/v1/aircraft",
+            "/air-craft/api/v1//aircraft-type/**",
             "/air-craft/swagger-ui/**",
             "/air-craft/swagger-ui/index.html",
             "/air-craft/v3/api-docs/**",
@@ -71,7 +71,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
 
         } catch (Exception e) {
-            log.error("Fail on set user authentication:{}", e.toString());
+            log.error("Fail on set user authentication: {}", e.getMessage());
             return;
         }
         filterChain.doFilter(request, response);

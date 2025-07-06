@@ -24,6 +24,10 @@ public class Seat {
     String seatCode;
 
     @ManyToOne
+    @JoinColumn(name = "flight_fare_id")
+    FlightFare flightFare;
+
+    @ManyToOne
     @JoinColumn(name = "flight_id")
     Flight flight;
 

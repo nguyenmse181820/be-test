@@ -17,6 +17,36 @@ public class SeatServiceImpl implements SeatService {
 
     private final SeatPriceCacheService seatPriceCacheService;
 
+    @Override
+    public FarePrice getSeatFareAndPrice(Flight flight, String seatCode) {
+        FlightFare fare = null;
+
+        for (FlightFare f : flight.getFares()) {
+            List<String> seatCodes = Arrays.stream(f.getSeats().split(",")).toList();
+            if (seatCodes.contains(seatCode)) {
+                fare = f;
+                break;
+            }
+        }
+
+        if (fare == null) {
+            throw new BadRequestException("Seat code " + seatCode + " is not assigned to any fare for flight " + flight.getId() + "!");
+        }
+
+        Double price = seatPriceCacheService.get(fare.getId().toString());
+        if (price == null) {
+            price = ThreadLocalRandom.current().nextDouble(fare.getMinPrice(), fare.getMaxPrice());
+            seatPriceCacheService.put(fare.getId().toString(), price);
+        }
+        return FarePrice.builder()
+                .fare(fare)
+                .price(price)
+                .build();
+    }
+
+    //--------------------------------------------------------------------------------------------------------
+    @Deprecated
+    @SuppressWarnings("unused")
     private List<String> expandSeatRange(String seatRange) {
         List<String> seatCodes = new ArrayList<>();
 
@@ -34,6 +64,7 @@ public class SeatServiceImpl implements SeatService {
         return seatCodes;
     }
 
+    @Deprecated
     private List<String> expandRange(String range) {
         String[] bounds = range.split("-");
         if (bounds.length != 2) return Collections.emptyList();
@@ -58,9 +89,10 @@ public class SeatServiceImpl implements SeatService {
     }
 
     @Override
+    @Deprecated
     public FlightFare findFareForSeat(String seatCode, List<FlightFare> fares) {
         for (FlightFare fare : fares) {
-            List<String> expanded = expandSeatRange(fare.getSeatRange());
+            List<String> expanded = Arrays.stream(fare.getSeats().split(",")).toList();
             if (expanded.contains(seatCode)) {
                 return fare;
             }
@@ -69,6 +101,7 @@ public class SeatServiceImpl implements SeatService {
     }
 
     @Override
+    @Deprecated
     public void validateSeatRanges(List<FlightFare> fares, List<String> seatMap) {
         Set<String> definedSeats = new HashSet<>();
         Set<String> allSeatMap = new HashSet<>(seatMap);
@@ -76,7 +109,7 @@ public class SeatServiceImpl implements SeatService {
         List<String> missing = new ArrayList<>();
 
         for (FlightFare fare : fares) {
-            List<String> current = expandSeatRange(fare.getSeatRange());
+            List<String> current = Arrays.stream(fare.getSeats().split(",")).toList();
 
             for (String seat : current) {
                 if (!allSeatMap.contains(seat)) {
@@ -104,37 +137,29 @@ public class SeatServiceImpl implements SeatService {
     }
 
     @Override
+    @Deprecated
     public int countTotalSeats(List<FlightFare> fares) {
         Set<String> uniqueSeats = new HashSet<>();
         for (FlightFare fare : fares) {
-            uniqueSeats.addAll(expandSeatRange(fare.getSeatRange()));
+            uniqueSeats.addAll(Arrays.stream(fare.getSeats().split(",")).toList());
         }
         return uniqueSeats.size();
     }
 
     @Override
+    @Deprecated
     public int countSeatsForFare(FlightFare fare) {
-        List<String> seats = expandSeatRange(fare.getSeatRange());
+        List<String> seats = Arrays.stream(fare.getSeats().split(",")).toList();
         return seats.size();
     }
 
     @Override
+    @Deprecated
     public int countRemainingSeats(FlightFare fare, List<String> occupiedSeats) {
-        Set<String> seatSet = new HashSet<>(expandSeatRange(fare.getSeatRange()));
+        Set<String> seatSet = new HashSet<>(Arrays.stream(fare.getSeats().split(",")).toList());
         for (String occupied : occupiedSeats) {
             seatSet.remove(occupied); // Only removes if it's actually in the range
         }
         return seatSet.size(); // Remaining seats
-    }
-
-    @Override
-    public Double getSeatPrice(Flight flight, String seatCode) {
-        FlightFare fare = findFareForSeat(seatCode, flight.getFares());
-        Double price = seatPriceCacheService.get(flight.getId() + "_" + fare.getId());
-        if (price == null) {
-            price = ThreadLocalRandom.current().nextDouble(fare.getMinPrice(), fare.getMaxPrice());
-            seatPriceCacheService.put(flight.getId() + "_" + fare.getId(), price);
-        }
-        return price;
     }
 }

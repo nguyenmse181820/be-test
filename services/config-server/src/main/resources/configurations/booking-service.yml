@@ -1,15 +1,10 @@
 server:
-  servlet:
-    context-path: /booking-service
   port: 8082
 
 spring:
   application:
     name: booking-service
   datasource:
-#    url: jdbc:postgresql://18.139.219.235:5433/boeing_bookings
-#    username: boeing
-#    password: boeing
     url: jdbc:postgresql://localhost:5432/boeing_bookings
     username: postgres
     password: 12345
@@ -69,13 +64,17 @@ external:
 app:
   rabbitmq:
     exchanges:
-      events: booking.events.exchange
       commands: booking.commands.exchange
+      events: booking.events.exchange
     queues:
       internalFareChecked: bps.internal.event.farechecked.queue
       internalSeatAvailabilityChecked: bps.internal.event.seatavailabilitychecked.queue
       internalBookingCreatedPendingPayment: bps.internal.event.bookingcreatedpendingpayment.queue
       internalPaymentCompleted: bps.internal.event.paymentcompleted.queue
+      internalSeatsConfirmed: bps.internal.event.seatsconfirmed.queue
+      internalVoucherUsed: bps.internal.event.voucherused.queue
+      internalPointsEarned: bps.internal.event.pointsearned.queue
+
       internalCreatePendingBookingCmd: bps.command.internal.createpending.queue
       sagaCreateBookingFailed: bps.saga.createbooking.failed.queue
       internalSeatsConfirmation: bps.internal.event.seatsconfirmation.queue
@@ -84,6 +83,9 @@ app:
       internalSeatAvailabilityCheckedEvent: bps.event.internal.seatavailabilitychecked
       internalBookingCreatedEvent: bps.event.internal.bookingcreatedpendingpayment
       internalPaymentCompletedEvent: bps.event.internal.paymentcompleted
+      internalSeatsConfirmedEvent: bps.event.internal.seatsconfirmed
+      internalVoucherUsedEvent: bps.event.internal.voucherused
+      internalPointsEarnedEvent: bps.event.internal.pointsearned
       internalCreatePendingBookingCmdKey: bps.command.internal.createpending
       sagaCreateBookingFailedEvent: saga.createbooking.failed
       seatConfirmationResponse: bps.event.internal.seatconfirmationresponse

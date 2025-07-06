@@ -1,11 +1,17 @@
 package com.boeing.flightservice.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
 import java.util.List;
 import java.util.UUID;
+
+import com.boeing.flightservice.entity.enums.FareType;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.FieldDefaults;
 
 @Entity
 @AllArgsConstructor
@@ -30,14 +36,13 @@ public class FlightFare {
     @Column(name = "flight_fare_name")
     String name;
 
-    /**
-     * Allows two special characters
-     * "-": defines a range: example A1-B10
-     * ",": separates ranges or single
-     * Example: A1-B10,C2
-     */
-    @Column(name = "seat_range")
-    String seatRange;
+    @Column(name = "fare_type")
+    @Enumerated(EnumType.STRING)
+    FareType fareType;
+
+    // Separated by comma
+    @Column(name = "seats")
+    String seats;
 
     @ManyToMany
     @JoinTable(
@@ -54,4 +59,7 @@ public class FlightFare {
     @ManyToOne
     @JoinColumn(name = "flight_id")
     Flight flight;
+
+    @OneToMany(mappedBy = "flightFare")
+    List<Seat> occupiedSeats;
 }

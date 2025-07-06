@@ -4,10 +4,13 @@ import com.boeing.aircraftservice.dtos.request.*;
 import com.boeing.aircraftservice.dtos.response.AircraftResponseDTO;
 import com.boeing.aircraftservice.dtos.response.AircraftTypeResponseDTO;
 import com.boeing.aircraftservice.dtos.response.PagingResponse;
+import com.boeing.aircraftservice.exception.BadRequestException;
+import com.boeing.aircraftservice.exception.ElementExistException;
 import com.boeing.aircraftservice.exception.ElementNotFoundException;
 import com.boeing.aircraftservice.exception.UnchangedStateException;
 import com.boeing.aircraftservice.mappers.AircraftMapper;
 import com.boeing.aircraftservice.mappers.AircraftTypeMapper;
+import com.boeing.aircraftservice.pojos.Aircraft;
 import com.boeing.aircraftservice.pojos.AircraftType;
 import com.boeing.aircraftservice.repositories.AircraftTypeRepository;
 import com.boeing.aircraftservice.utils.AircraftTypeSpecification;
@@ -20,6 +23,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -150,13 +154,51 @@ public class AircraftTypeServiceImpl implements AircraftTypeService {
     }
 
     @Override
-    public AircraftTypeResponseDTO createAircraftType(CreateAircraftTypeRequest createAircraftTypeRequest) {
-        return null;
+    public AircraftTypeResponseDTO createAircraftType(CreateAircraftTypeV2Request createAircraftTypeRequest) {
+        if (createAircraftTypeRequest == null) {
+            throw new BadRequestException("Create aircraft type request is required");
+        }
+
+        AircraftType aircraftType = aircraftTypeRepository.findAircraftTypeByModel(createAircraftTypeRequest.getAircraftType().getModel());
+
+        if (aircraftType != null) {
+            throw new ElementExistException("Aircraft type already exists");
+        }
+
+        AircraftType aircraftTypeNew = AircraftType.builder()
+                .model(createAircraftTypeRequest.getAircraftType().getModel())
+                .manufacturer(createAircraftTypeRequest.getAircraftType().getManufacturer())
+                .seatMap((Map<String, Object>) createAircraftTypeRequest.getAircraftType().getSeatMap())
+                .totalSeats(createAircraftTypeRequest.getAircraftType().getTotalSeats())
+                .build();
+
+        return aircraftTypeMapper.aircraftTypetoAircraftTypeResponseDTO(aircraftTypeRepository.save(aircraftTypeNew));
     }
 
     @Override
-    public AircraftTypeResponseDTO updateAircraftType(UpdateAircraftTypeRequest updateAircraftTypeRequest, UUID aircraftID) {
-        return null;
+    public AircraftTypeResponseDTO updateAircraftType(UpdateAircraftTypeV2Request updateAircraftTypeRequest, UUID aircraftID) {
+        AircraftType aircraftType = aircraftTypeRepository.findAircraftTypeById(aircraftID);
+        if (aircraftType == null) {
+            throw new ElementNotFoundException("AircraftType not found");
+        }
+
+        if (!aircraftType.getModel().equals(updateAircraftTypeRequest.getAircraftType().getModel()) && StringUtils.hasText(updateAircraftTypeRequest.getAircraftType().getModel())) {
+            AircraftType aircraftTypeExist = aircraftTypeRepository.findAircraftTypeByModel(updateAircraftTypeRequest.getAircraftType().getModel());
+            if (aircraftTypeExist != null) {
+                throw new ElementExistException("AircraftType already exists");
+            }
+            aircraftType.setModel(updateAircraftTypeRequest.getAircraftType().getModel());
+        }
+
+        if (StringUtils.hasText(updateAircraftTypeRequest.getAircraftType().getManufacturer())) {
+            aircraftType.setManufacturer(updateAircraftTypeRequest.getAircraftType().getManufacturer());
+        }
+
+        if (updateAircraftTypeRequest.getAircraftType().getSeatMap() != null) {
+            aircraftType.setSeatMap((Map<String, Object>) updateAircraftTypeRequest.getAircraftType().getSeatMap());
+        }
+
+        return aircraftTypeMapper.aircraftTypetoAircraftTypeResponseDTO(aircraftTypeRepository.save(aircraftType));
     }
 
     @Override

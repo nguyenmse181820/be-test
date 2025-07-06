@@ -10,6 +10,6 @@ import lombok.Value;
 public class UpdateAircraftTypeRequest {
     String model;
     String manufacturer;
-    Object mapSeats;
+    Object seatMap;
     Integer totalSeats;
 }

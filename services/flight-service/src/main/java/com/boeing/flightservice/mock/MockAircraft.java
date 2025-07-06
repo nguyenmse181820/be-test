@@ -2,6 +2,8 @@ package com.boeing.flightservice.mock;
 
 import java.util.List;
 
+@Deprecated
+@SuppressWarnings("unused")
 public class MockAircraft {
     public static int NO_SEATS = 100;
     public static List<String> seatCodes = List.of(

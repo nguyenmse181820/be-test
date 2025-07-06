@@ -172,24 +172,25 @@ public class AircraftServiceImpl implements AircraftService {
             throw new BadRequestException("Create aircraft type request is required");
         }
 
+        Aircraft aircraftNew = Aircraft.builder()
+                .code(createAircraftRequest.getCode())
+                .build();
+
         AircraftType aircraftType = aircraftTypeRepository.findAircraftTypeByModel(createAircraftRequest.getAircraftType().getModel());
 
         if (aircraftType != null) {
-            throw new ElementExistException("Aircraft type already exists");
+            aircraftNew.setAircraftType(aircraftType);
+        } else {
+            AircraftType aircraftTypeNew = AircraftType.builder()
+                    .model(createAircraftRequest.getAircraftType().getModel())
+                    .manufacturer(createAircraftRequest.getAircraftType().getManufacturer())
+                    .seatMap((Map<String, Object>) createAircraftRequest.getAircraftType().getSeatMap())
+                    .totalSeats(createAircraftRequest.getAircraftType().getTotalSeats())
+                    .aircrafts(List.of(aircraftNew))
+                    .build();
+
+            aircraftNew.setAircraftType(aircraftTypeNew);
         }
-
-        AircraftType aircraftTypeNew = AircraftType.builder()
-                .model(createAircraftRequest.getAircraftType().getModel())
-                .manufacturer(createAircraftRequest.getAircraftType().getManufacturer())
-                .seatMap((Map<String, Object>) createAircraftRequest.getAircraftType().getSeatMap())
-                .totalSeats(createAircraftRequest.getAircraftType().getTotalSeats())
-                .build();
-
-        Aircraft aircraftNew = Aircraft.builder()
-                .code(createAircraftRequest.getCode())
-                .aircraftType(aircraftTypeNew)
-                .build();
-
         return aircraftMapper.aircrafttoAircraftResponseDTO(aircraftRepository.save(aircraftNew));
     }
 
@@ -201,7 +202,7 @@ public class AircraftServiceImpl implements AircraftService {
             throw new ElementNotFoundException("Aircraft not found");
         }
 
-        if (StringUtils.hasText(updateAircraftRequest.getCode())) {
+        if (!aircraft.getCode().equals(updateAircraftRequest.getCode()) && StringUtils.hasText(updateAircraftRequest.getCode())) {
             Aircraft aircraftExisCode = aircraftRepository.findAircraftByCode(updateAircraftRequest.getCode());
             if (aircraftExisCode != null) {
                 throw new ElementExistException("Aircraft already exists");
@@ -221,7 +222,7 @@ public class AircraftServiceImpl implements AircraftService {
 
         AircraftType aircraftType = aircraft.getAircraftType();
 
-        if (StringUtils.hasText(updateAircraftRequest.getAircraftType().getModel())) {
+        if (!aircraftType.getModel().equals(updateAircraftRequest.getAircraftType().getModel()) && StringUtils.hasText(updateAircraftRequest.getAircraftType().getModel())) {
             AircraftType aircraftTypeExistModel = aircraftTypeRepository.findAircraftTypeByModel(updateAircraftRequest.getAircraftType().getModel());
             if (aircraftTypeExistModel != null) {
                 throw new ElementExistException("AircraftTypeModel already exists");

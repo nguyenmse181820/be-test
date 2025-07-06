@@ -12,5 +12,5 @@ public interface RouteService {
     MappingJacksonValue findAll(Map<String, String> params);
     RouteResponseDTO createRoute(RouteCreateRequestDTO request);
     RouteResponseDTO getRouteById(UUID id);
-    Double getEstimatedDuration(UUID originAirportId, UUID destinationAirportId);
+    Integer getEstimatedDuration(UUID originAirportId, UUID destinationAirportId);
 }

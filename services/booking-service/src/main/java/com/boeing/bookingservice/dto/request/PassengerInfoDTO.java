@@ -12,14 +12,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class PassengerInfoDTO {
-    private UUID id;
+    private Integer id;
 
     @NotBlank(message = "First name cannot be blank")
     private String firstName;

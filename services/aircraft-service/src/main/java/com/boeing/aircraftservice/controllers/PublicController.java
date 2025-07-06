@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -38,7 +37,7 @@ public class PublicController {
      * Method get all air-crafts have status is active
      *
      * @param currentPage currentOfThePage
-     * @param pageSize numberOfElement
+     * @param pageSize    numberOfElement
      * @return list or empty
      */
     @Operation(summary = "Get all air-crafts active", description = "Retrieves all air-crafts have status is active")
@@ -55,10 +54,10 @@ public class PublicController {
     /**
      * Method search air-crafts active with name and sortBy
      *
-     * @param currentPage currentOfThePage
-     * @param pageSize    numberOfElement
-     * @param code code of aircraft to search
-     * @param model sortBy model with aircraftType
+     * @param currentPage  currentOfThePage
+     * @param pageSize     numberOfElement
+     * @param code         code of aircraft to search
+     * @param model        sortBy model with aircraftType
      * @param manufacturer sortBy manufacturer with aircraftType
      * @return list or empty
      */
