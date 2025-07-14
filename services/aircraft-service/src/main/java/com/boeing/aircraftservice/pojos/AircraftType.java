@@ -35,7 +35,7 @@ public class AircraftType extends BaseEntity {
 
     Integer totalSeats;
 
-    @OneToMany(mappedBy = "aircraftType", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "aircraftType")
     List<Aircraft> aircrafts;
 
 }

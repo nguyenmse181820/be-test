@@ -7,23 +7,27 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/boarding-pass")
+@Validated
 public class BoardingPassController {
 
     private final BoardingPassService boardingPassService;
 
     @GetMapping
-    public ResponseEntity<?> getAllBoardingPass() {
+    public ResponseEntity<?> getAllBoardingPass(@RequestParam(name = "bookingReference") String bookingReference) {
         return ResponseEntity.ok(ApiResponse
                 .builder()
                 .success(true)
                 .message("Get All Boarding Pass Successfully")
-                .data(boardingPassService.getAllBoardingPasses())
+                .data(boardingPassService.getAllBoardingPassesByBookingReference(bookingReference))
                 .build());
     }
 
@@ -38,14 +42,13 @@ public class BoardingPassController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createBoardingPass(@RequestBody @Valid AddBoardingPassDto addBoardingPassDto,
-                                                @RequestParam(name = "flightId") UUID flightId,@RequestParam(name = "booking_detail_id") UUID booking_detail_id) {
+    public ResponseEntity<?> createBoardingPass(@RequestBody @Valid List<AddBoardingPassDto> addBoardingPassDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse
                         .builder()
                         .success(true)
                         .message("Add new Boarding Pass Successfully")
-                        .data(boardingPassService.addNewBoardingPass(addBoardingPassDto, flightId, booking_detail_id))
+                        .data(boardingPassService.addNewBoardingPass(addBoardingPassDto))
                         .build()
         );
     }

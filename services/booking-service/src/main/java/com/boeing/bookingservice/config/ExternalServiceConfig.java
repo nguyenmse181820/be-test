@@ -23,7 +23,7 @@ public class ExternalServiceConfig {
     
     @Data
     public static class LoyaltyService {
-        @Value("${services.loyalty-service.url:http://localhost:8086}")
+        @Value("${services.loyalty-service.url:http://localhost:8085}")
         private String url;
         private String name = "loyalty-service";
         private String basePath = "/api/v1";

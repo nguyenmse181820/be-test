@@ -1,5 +1,6 @@
 package com.boeing.bookingservice.saga.command;
 
+import com.boeing.bookingservice.dto.request.BaggageAddonRequestDTO;
 import com.boeing.bookingservice.dto.request.PassengerInfoDTO;
 import com.boeing.bookingservice.dto.request.SeatSelectionDTO;
 import lombok.Builder;
@@ -30,4 +31,5 @@ public class CreatePendingBookingInternalCommand {
     LocalDateTime snapshotDepartureTime;
     LocalDateTime snapshotArrivalTime;
     String clientIpAddress;
+    List<BaggageAddonRequestDTO> baggageAddons;
 }

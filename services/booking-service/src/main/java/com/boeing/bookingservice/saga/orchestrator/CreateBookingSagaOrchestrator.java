@@ -33,12 +33,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 @Service
@@ -84,14 +79,14 @@ public class CreateBookingSagaOrchestrator {
     @Retry(name = "flightServiceRetry")
     public void startSaga(CreateBookingRequestDTO request, UUID userId, UUID sagaId, String bookingReferenceForUser,
                           String clientIpAddress) {
-        // Determine if this is a multi-segment booking
-        boolean isMultiSegment = request.getFlightIds() != null && !request.getFlightIds().isEmpty();
-        
-        log.info("[SAGA_DEBUG][{}] Received booking request: flightIds={}, isMultiSegment={}, selectedFareName='{}'", 
+        // Determine if this is a multi-segment booking - must have more than 1 flight in flightIds
+        boolean isMultiSegment = request.getFlightIds() != null && request.getFlightIds().size() > 1;
+
+        log.info("[SAGA_DEBUG][{}] Received booking request: flightIds={}, isMultiSegment={}, selectedFareName='{}'",
                 sagaId, request.getFlightIds(), isMultiSegment, request.getSelectedFareName());
-        
+
         log.info("[SAGA_START][{}] User: {}, Flight(s): {}, BookingRefForUser: {}, IP: {}, MultiSegment: {}",
-                sagaId, userId, isMultiSegment ? request.getFlightIds() : request.getFlightId(), 
+                sagaId, userId, isMultiSegment ? request.getFlightIds() : request.getFlightId(),
                 bookingReferenceForUser, clientIpAddress, isMultiSegment);
 
         CreateBookingSagaPayload payload = CreateBookingSagaPayload.builder()
@@ -110,7 +105,7 @@ public class CreateBookingSagaOrchestrator {
                     "No passengers provided.");
             return;
         }
-        
+
         // Validate flight information based on booking type
         if (isMultiSegment) {
             if (request.getFlightIds() == null || request.getFlightIds().isEmpty()) {
@@ -129,7 +124,7 @@ public class CreateBookingSagaOrchestrator {
                 return;
             }
         }
-        
+
         if (request.getSelectedFareName() == null || request.getSelectedFareName().isBlank()) {
             log.error("[SAGA_VALIDATION][{}] No fare name in booking request", sagaId);
             handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING, "No fare name in request.", payload);
@@ -137,7 +132,7 @@ public class CreateBookingSagaOrchestrator {
                     "No fare selected.");
             return;
         }
-        
+
         // Route to appropriate processing based on booking type
         if (isMultiSegment) {
             processMultiSegmentBooking(request, userId, sagaId, bookingReferenceForUser, clientIpAddress, payload);
@@ -145,10 +140,10 @@ public class CreateBookingSagaOrchestrator {
             processSingleSegmentBooking(request, userId, sagaId, bookingReferenceForUser, clientIpAddress, payload);
         }
     }
-    
-    private void processSingleSegmentBooking(CreateBookingRequestDTO request, UUID userId, UUID sagaId, 
-                                           String bookingReferenceForUser, String clientIpAddress, 
-                                           CreateBookingSagaPayload payload) {
+
+    private void processSingleSegmentBooking(CreateBookingRequestDTO request, UUID userId, UUID sagaId,
+                                             String bookingReferenceForUser, String clientIpAddress,
+                                             CreateBookingSagaPayload payload) {
         int requestedPassengerCount = request.getPassengers().size();
         try {
             log.info("[SAGA_STEP][{}] Checking fare availability for flight: {}, fare: {}, count: {}",
@@ -156,7 +151,7 @@ public class CreateBookingSagaOrchestrator {
 
             // Record start time for monitoring
             long startTime = System.currentTimeMillis();
-            
+
             // Enhanced error handling around API call
             FsFlightWithFareDetailsDTO flightDetails = null;
             try {
@@ -171,70 +166,70 @@ public class CreateBookingSagaOrchestrator {
                 log.error("[SAGA_ERROR][{}] Timeout connecting to Flight Service: {}", sagaId, e.getMessage(), e);
                 throw new SagaProcessingException("Flight service timeout: " + e.getMessage());
             }
-            
+
             long endTime = System.currentTimeMillis();
             log.info("[SAGA_STEP][{}] Flight details retrieved in {} ms", sagaId, (endTime - startTime));
-            
+
             // Comprehensive validation of response
             if (flightDetails == null) {
                 log.error("[SAGA_ERROR][{}] Null response received from Flight Service", sagaId);
                 throw new SagaProcessingException("Null response received from Flight Service");
             }
-            
+
             if (flightDetails.getAvailableFares() == null || flightDetails.getAvailableFares().isEmpty()) {
                 log.error("[SAGA_ERROR][{}] Flight {} has no available fares", sagaId, request.getFlightId());
                 throw new SagaProcessingException("No available fares for flight " + request.getFlightId());
             }
-            
+
             // Log available fares for debugging
             log.info("[SAGA_DEBUG][{}] Available fares for flight {}: {}", sagaId, request.getFlightId(),
                     flightDetails.getAvailableFares().stream()
-                            .map(fare -> fare.getName() + " (seats: " + fare.getSeatsAvailableForFare() + ")")
+                            .map(fare -> fare.getName() + " (seats: " + calculateAvailableSeats(fare) + ")")
                             .toList());
             log.info("[SAGA_DEBUG][{}] Requested fare name: '{}'", sagaId, request.getSelectedFareName());
-            
+
             // Check if the requested fare exists and has enough seats
             boolean fareIsActuallyAvailable = flightDetails.getAvailableFares().stream()
-                    .anyMatch(fare -> fare.getName() != null && 
-                            isFareNameMatch(fare.getName(), request.getSelectedFareName()) && 
-                            (fare.getSeatsAvailableForFare() == null || fare.getSeatsAvailableForFare() >= requestedPassengerCount));
-            
+                    .anyMatch(fare -> fare.getName() != null &&
+                            isFareNameMatch(fare.getName(), request.getSelectedFareName()) &&
+                            calculateAvailableSeats(fare) >= requestedPassengerCount);
+
             log.info("[SAGA_STEP][{}] Fare availability check result: {}", sagaId, fareIsActuallyAvailable);
 
             // Find the requested fare details with more careful null checking
             FsDetailedFareDTO requestedFare = flightDetails.getAvailableFares().stream()
-                    .filter(fare -> fare.getName() != null && 
+                    .filter(fare -> fare.getName() != null &&
                             isFareNameMatch(fare.getName(), request.getSelectedFareName()))
                     .findFirst()
                     .orElse(null);
-                    
+
             // Enhanced logging with detailed fare information
             if (requestedFare != null) {
-                log.info("[SAGA_STEP][{}] Fare details - name: {}, price: {}, availableSeats: {}, conditions: {}",
-                        sagaId, requestedFare.getName(), requestedFare.getPrice(), 
-                        requestedFare.getSeatsAvailableForFare(),
-                        requestedFare.getConditions() != null ? requestedFare.getConditions().size() : 0);
+                log.info("[SAGA_STEP][{}] Fare details - name: {}, price: {}, availableSeats: {}, benefits: {}",
+                        sagaId, requestedFare.getName(), requestedFare.getPrice(),
+                        calculateAvailableSeats(requestedFare),
+                        requestedFare.getBenefits() != null ? requestedFare.getBenefits().size() : 0);
             } else {
-                log.warn("[SAGA_STEP][{}] Requested fare {} not found in flight details", 
+                log.warn("[SAGA_STEP][{}] Requested fare {} not found in flight details",
                         sagaId, request.getSelectedFareName());
-                
+
                 // Log all available fares for debugging
                 log.debug("[SAGA_DEBUG][{}] Available fares:", sagaId);
-                flightDetails.getAvailableFares().forEach(fare -> 
-                    log.debug("[SAGA_DEBUG][{}]   - {} (seats: {}, price: {})", 
-                            sagaId, fare.getName(), fare.getSeatsAvailableForFare(), fare.getPrice())
+                flightDetails.getAvailableFares().forEach(fare ->
+                        log.debug("[SAGA_DEBUG][{}]   - {} (seats: {}, price: {})",
+                                sagaId, fare.getName(), calculateAvailableSeats(fare), fare.getPrice())
                 );
             }
-            
+
             // Build an informative event with detailed information about the fare check
             String failureReason = null;
             if (!fareIsActuallyAvailable) {
                 if (requestedFare == null) {
                     failureReason = "Selected fare '" + request.getSelectedFareName() + "' not found.";
-                } else if (requestedFare.getSeatsAvailableForFare() < requestedPassengerCount) {
+                } else if (calculateAvailableSeats(requestedFare) < requestedPassengerCount) {
                     failureReason = "Not enough seats available for the selected fare. " +
-                            "Requested: " + requestedPassengerCount + ", Available: " + 
-                            requestedFare.getSeatsAvailableForFare();
+                            "Requested: " + requestedPassengerCount + ", Available: " +
+                            calculateAvailableSeats(requestedFare);
                 } else {
                     failureReason = "Not enough seats available for the selected fare or fare not found.";
                 }
@@ -245,7 +240,7 @@ public class CreateBookingSagaOrchestrator {
                     .fareAvailable(fareIsActuallyAvailable)
                     .requestedFareName(request.getSelectedFareName())
                     .requestedCount(requestedPassengerCount)
-                    .actualAvailableCount(requestedFare != null ? requestedFare.getSeatsAvailableForFare() : 0)
+                    .actualAvailableCount(requestedFare != null ? calculateAvailableSeats(requestedFare) : 0)
                     .pricePerPassengerForFare(requestedFare != null ? requestedFare.getPrice() : null)
                     .failureReason(failureReason)
                     .build();
@@ -273,7 +268,7 @@ public class CreateBookingSagaOrchestrator {
                     "Connection to flight service timed out. Please try again later.");
         } catch (SagaProcessingException e) {
             log.error("[SAGA_ERROR][{}] Business logic error: {}", sagaId, e.getMessage(), e);
-            handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING, 
+            handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING,
                     "BUSINESS_ERROR: " + e.getMessage(), payload);
             bookingService.failSagaInitiationBeforePaymentUrl(sagaId, bookingReferenceForUser,
                     e.getMessage());
@@ -285,12 +280,12 @@ public class CreateBookingSagaOrchestrator {
                     "Failed to get flight details from Flight Service.");
         }
     }
-    
-    private void processMultiSegmentBooking(CreateBookingRequestDTO request, UUID userId, UUID sagaId, 
-                                          String bookingReferenceForUser, String clientIpAddress, 
-                                          CreateBookingSagaPayload payload) {
+
+    private void processMultiSegmentBooking(CreateBookingRequestDTO request, UUID userId, UUID sagaId,
+                                            String bookingReferenceForUser, String clientIpAddress,
+                                            CreateBookingSagaPayload payload) {
         int requestedPassengerCount = request.getPassengers().size();
-        
+
         try {
             log.info("[SAGA_STEP][{}] Processing multi-segment booking for {} flight segments, fare: {}, passengers: {}",
                     sagaId, request.getFlightIds().size(), request.getSelectedFareName(), requestedPassengerCount);
@@ -299,45 +294,45 @@ public class CreateBookingSagaOrchestrator {
             List<Map<String, Object>> allFlightDetails = new ArrayList<>();
             boolean allFaresAvailable = true;
             String failureReason = null;
-            
+
             for (int i = 0; i < request.getFlightIds().size(); i++) {
                 UUID flightId = request.getFlightIds().get(i);
-                
-                log.info("[SAGA_STEP][{}] Checking flight segment {}/{}: {}", 
+
+                log.info("[SAGA_STEP][{}] Checking flight segment {}/{}: {}",
                         sagaId, i + 1, request.getFlightIds().size(), flightId);
-                
+
                 try {
                     FsFlightWithFareDetailsDTO flightDetails = flightClient.getFlightDetails(flightId);
-                    
+
                     if (flightDetails == null || flightDetails.getAvailableFares() == null || flightDetails.getAvailableFares().isEmpty()) {
                         allFaresAvailable = false;
                         failureReason = "Flight segment " + (i + 1) + " has no available fares";
                         log.error("[SAGA_ERROR][{}] Flight segment {} has no available fares", sagaId, i + 1);
                         break;
                     }
-                    
+
                     // Log available fares for debugging
                     log.info("[SAGA_DEBUG][{}] Available fares for flight segment {}: {}", sagaId, i + 1,
                             flightDetails.getAvailableFares().stream()
-                                    .map(fare -> fare.getName() + " (seats: " + fare.getSeatsAvailableForFare() + ")")
+                                    .map(fare -> fare.getName() + " (seats: " + calculateAvailableSeats(fare) + ")")
                                     .toList());
-                    
+
                     log.info("[SAGA_DEBUG][{}] Requested fare: '{}' for {} passengers", sagaId, request.getSelectedFareName(), requestedPassengerCount);
-                    
+
                     // Check if the requested fare exists and has enough seats for this segment
                     // Handle various fare name formats (case-insensitive and common variations)
                     boolean fareIsAvailableForThisSegment = flightDetails.getAvailableFares().stream()
-                            .anyMatch(fare -> fare.getName() != null && 
-                                    isFareNameMatch(fare.getName(), request.getSelectedFareName()) && 
-                                    (fare.getSeatsAvailableForFare() == null || fare.getSeatsAvailableForFare() >= requestedPassengerCount));
-                    
+                            .anyMatch(fare -> fare.getName() != null &&
+                                    isFareNameMatch(fare.getName(), request.getSelectedFareName()) &&
+                                    calculateAvailableSeats(fare) >= requestedPassengerCount);
+
                     if (!fareIsAvailableForThisSegment) {
                         allFaresAvailable = false;
                         failureReason = "Fare '" + request.getSelectedFareName() + "' not available for flight segment " + (i + 1);
                         log.error("[SAGA_ERROR][{}] Fare not available for flight segment {}", sagaId, i + 1);
                         break;
                     }
-                    
+
                     // Store flight details for later use
                     Map<String, Object> flightDetail = new HashMap<>();
                     flightDetail.put("flightId", flightId);
@@ -346,9 +341,9 @@ public class CreateBookingSagaOrchestrator {
                     flightDetail.put("destinationAirportCode", flightDetails.getDestinationAirport().getCode());
                     flightDetail.put("departureTime", flightDetails.getDepartureTime());
                     flightDetail.put("arrivalTime", flightDetails.getEstimatedArrivalTime());
-                    
+
                     allFlightDetails.add(flightDetail);
-                    
+
                 } catch (feign.FeignException.NotFound e) {
                     allFaresAvailable = false;
                     failureReason = "Flight segment " + (i + 1) + " not found: " + flightId;
@@ -364,9 +359,26 @@ public class CreateBookingSagaOrchestrator {
 
             if (allFaresAvailable) {
                 log.info("[SAGA_STEP][{}] All flight segments validated successfully", sagaId);
-                
+
                 // All segments validated, proceed to create the multi-segment booking
                 try {
+                    // Get payment method from request - don't default if missing
+                    String paymentMethod = request.getPaymentMethod();
+                    if (paymentMethod == null || paymentMethod.isEmpty()) {
+                        log.error("[SAGA_ERROR][{}] No payment method specified for multi-segment booking", sagaId);
+                        throw new SagaProcessingException("Payment method is required");
+                    }
+
+                    // Validate that the payment method is a valid enum value
+                    try {
+                        com.boeing.bookingservice.model.enums.PaymentMethod paymentMethodEnum =
+                                com.boeing.bookingservice.model.enums.PaymentMethod.valueOf(paymentMethod);
+                        log.info("[SAGA_STEP][{}] Using payment method: {} for multi-segment booking", sagaId, paymentMethodEnum);
+                    } catch (IllegalArgumentException e) {
+                        log.error("[SAGA_ERROR][{}] Invalid payment method: {}", sagaId, paymentMethod);
+                        throw new SagaProcessingException("Invalid payment method: " + paymentMethod);
+                    }
+
                     CreatePendingMultiSegmentBookingInternalCommand command = CreatePendingMultiSegmentBookingInternalCommand.builder()
                             .sagaId(sagaId)
                             .bookingReference(bookingReferenceForUser)
@@ -375,51 +387,53 @@ public class CreateBookingSagaOrchestrator {
                             .selectedFareName(request.getSelectedFareName())
                             .selectedSeatsByFlight(request.getSelectedSeatsByFlight())
                             .userId(userId)
-                            .totalAmount(0.0) // Will be calculated in the booking service
+                            .totalAmount(request.getTotalAmount() != null ? request.getTotalAmount() : 0.0) // Use frontend amount
                             .discountAmount(0.0) // TODO: Handle voucher discounts
                             .appliedVoucherCode(request.getVoucherCode())
                             .paymentDeadline(LocalDateTime.now().plusMinutes(15))
                             .flightDetails(allFlightDetails)
-                            .paymentMethod(request.getPaymentMethod())
+                            .paymentMethod(paymentMethod)
                             .clientIpAddress(clientIpAddress)
+                            .seatPricingByFlight(request.getSeatPricingByFlight()) // Pass frontend pricing
+                            .baggageAddons(request.getBaggageAddons())
                             .build();
 
-                    saveSagaState(sagaId, SagaStep.AWAITING_MULTI_SEGMENT_PENDING_BOOKING_CREATION, payload, 
+                    saveSagaState(sagaId, SagaStep.AWAITING_MULTI_SEGMENT_PENDING_BOOKING_CREATION, payload,
                             "All flight segments validated, creating multi-segment booking");
-                    
+
                     rabbitTemplate.convertAndSend(commandsExchange, RK_INTERNAL_CREATE_MULTI_SEGMENT_PENDING_BOOKING_CMD, command);
-                    
+
                     log.info("[SAGA_STEP][{}] Multi-segment booking command sent to queue", sagaId);
-                    
+
                 } catch (Exception e) {
                     log.error("[SAGA_ERROR][{}] Failed to send multi-segment booking command: {}", sagaId, e.getMessage(), e);
-                    handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING, 
+                    handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING,
                             "Failed to send multi-segment booking command: " + e.getMessage(), payload);
                     bookingService.failSagaInitiationBeforePaymentUrl(sagaId, bookingReferenceForUser,
                             "Failed to process multi-segment booking request.");
                 }
-                
+
             } else {
                 log.error("[SAGA_ERROR][{}] Multi-segment fare availability check failed: {}", sagaId, failureReason);
                 handleSagaFailure(sagaId, SagaStep.FAILED_FARE_UNAVAILABLE, failureReason, payload);
                 bookingService.failSagaInitiationBeforePaymentUrl(sagaId, bookingReferenceForUser, failureReason);
             }
-            
+
         } catch (Exception e) {
             log.error("[SAGA_ERROR][{}] Unexpected error in multi-segment booking processing: {}", sagaId, e.getMessage(), e);
-            handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING, 
+            handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING,
                     "Unexpected error in multi-segment processing: " + e.getMessage(), payload);
             bookingService.failSagaInitiationBeforePaymentUrl(sagaId, bookingReferenceForUser,
                     "An unexpected error occurred while processing your booking.");
         }
     }
-    
+
     // Comprehensive fallback method for circuit breaker
     public void startSagaFallback(CreateBookingRequestDTO request, UUID userId, UUID sagaId, String bookingReferenceForUser,
-                          String clientIpAddress, Exception e) {
-        log.warn("[SAGA_CIRCUIT_BREAKER][{}] Circuit breaker triggered for startSaga: {}", 
+                                  String clientIpAddress, Exception e) {
+        log.warn("[SAGA_CIRCUIT_BREAKER][{}] Circuit breaker triggered for startSaga: {}",
                 sagaId, e.getMessage());
-        
+
         try {
             // Create a payload for the failure case
             CreateBookingSagaPayload payload = CreateBookingSagaPayload.builder()
@@ -428,17 +442,17 @@ public class CreateBookingSagaOrchestrator {
                     .userFriendlyBookingReference(bookingReferenceForUser)
                     .clientIpAddress(clientIpAddress)
                     .build();
-            
+
             // Get user-friendly version of the exception for logging and tracking
             String errorType = e.getClass().getSimpleName();
             String errorMessage = e.getMessage();
-            
+
             log.info("[SAGA_FALLBACK][{}] Handling {} with message: {}", sagaId, errorType, errorMessage);
-            
+
             // Record the circuit breaker activation in saga state with detailed info
-            saveSagaState(sagaId, SagaStep.FAILED_CIRCUIT_BREAKER, payload, 
+            saveSagaState(sagaId, SagaStep.FAILED_CIRCUIT_BREAKER, payload,
                     String.format("Circuit breaker activated for %s: %s", errorType, errorMessage));
-                    
+
             // Provide a user-friendly error message based on the exception type
             String userMessage;
             if (e instanceof TimeoutException || e instanceof feign.RetryableException) {
@@ -450,10 +464,10 @@ public class CreateBookingSagaOrchestrator {
             } else {
                 userMessage = "Flight service is currently unavailable. Please try again later.";
             }
-            
+
             // Inform the client with appropriate message
             bookingService.failSagaInitiationBeforePaymentUrl(sagaId, bookingReferenceForUser, userMessage);
-                    
+
         } catch (Exception fallbackError) {
             log.error("[SAGA_ERROR][{}] Fallback method failed: {}", sagaId, fallbackError.getMessage(), fallbackError);
             try {
@@ -466,6 +480,7 @@ public class CreateBookingSagaOrchestrator {
         }
     }
 
+    @RabbitListener(queues = "${app.rabbitmq.queues.internalFareChecked}")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleFareAvailabilityChecked(FareAvailabilityCheckedEvent event) {
         UUID sagaId = event.getSagaId();
@@ -494,11 +509,12 @@ public class CreateBookingSagaOrchestrator {
                     payload.getInitialRequest().getPassengers().size(),
                     payload.getInitialRequest().getSelectedFareName());
             payload.setTotalAmountBeforeDiscount(bookingAmountBeforeDiscount);
-            log.info("[SAGA_INFO][{}] Calculated totalAmountBeforeDiscount: {}", sagaId, bookingAmountBeforeDiscount);            saveSagaState(sagaId, SagaStep.FARE_AVAILABILITY_CHECKED, payload, null);
+            log.info("[SAGA_INFO][{}] Calculated totalAmountBeforeDiscount: {}", sagaId, bookingAmountBeforeDiscount);
+            saveSagaState(sagaId, SagaStep.FARE_AVAILABILITY_CHECKED, payload, null);
 
             // Check if user provided seat selections
-            if (payload.getInitialRequest().getSeatSelections() != null && 
-                !payload.getInitialRequest().getSeatSelections().isEmpty()) {
+            if (payload.getInitialRequest().getSeatSelections() != null &&
+                    !payload.getInitialRequest().getSeatSelections().isEmpty()) {
                 log.info("[SAGA_STEP][{}] User provided seat selections, checking seat availability.", sagaId);
                 checkSeatAvailability(sagaId, payload);
             } else {
@@ -553,6 +569,29 @@ public class CreateBookingSagaOrchestrator {
             return;
         }
 
+        // Get payment method from request - don't default if missing
+        String paymentMethod = currentPayload.getInitialRequest().getPaymentMethod();
+        if (paymentMethod == null || paymentMethod.isEmpty()) {
+            log.error("[SAGA_ERROR][{}] No payment method specified for booking", sagaId);
+            handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING, "Payment method is required", currentPayload);
+            bookingService.failSagaInitiationBeforePaymentUrl(sagaId, currentPayload.getUserFriendlyBookingReference(),
+                    "Payment method is required");
+            return;
+        }
+
+        // Validate that the payment method is a valid enum value
+        try {
+            com.boeing.bookingservice.model.enums.PaymentMethod paymentMethodEnum =
+                    com.boeing.bookingservice.model.enums.PaymentMethod.valueOf(paymentMethod);
+            log.info("[SAGA_STEP][{}] Using payment method: {} for single-segment booking", sagaId, paymentMethodEnum);
+        } catch (IllegalArgumentException e) {
+            log.error("[SAGA_ERROR][{}] Invalid payment method: {}", sagaId, paymentMethod);
+            handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING, "Invalid payment method: " + paymentMethod, currentPayload);
+            bookingService.failSagaInitiationBeforePaymentUrl(sagaId, currentPayload.getUserFriendlyBookingReference(),
+                    "Invalid payment method: " + paymentMethod);
+            return;
+        }
+
         CreatePendingBookingInternalCommand createCmd = CreatePendingBookingInternalCommand.builder()
                 .sagaId(sagaId)
                 .bookingReference(currentPayload.getUserFriendlyBookingReference())
@@ -563,13 +602,14 @@ public class CreateBookingSagaOrchestrator {
                 .userId(currentPayload.getUserId())
                 .totalAmount(finalTotalAmount)
                 .paymentDeadline(paymentDeadline)
-                .paymentMethod(currentPayload.getInitialRequest().getPaymentMethod())
+                .paymentMethod(paymentMethod)
                 .snapshotFlightCode(flightDetailsSnapshot.getFlightCode())
                 .snapshotOriginAirportCode(flightDetailsSnapshot.getOriginAirport().getCode())
                 .snapshotDestinationAirportCode(flightDetailsSnapshot.getDestinationAirport().getCode())
                 .snapshotDepartureTime(flightDetailsSnapshot.getDepartureTime())
                 .snapshotArrivalTime(flightDetailsSnapshot.getEstimatedArrivalTime())
                 .clientIpAddress(currentPayload.getClientIpAddress())
+                .baggageAddons(currentPayload.getInitialRequest().getBaggageAddons())
                 .build();
 
         updateSagaState(sagaId, SagaStep.AWAITING_PENDING_BOOKING_CREATION, currentPayload);
@@ -592,7 +632,9 @@ public class CreateBookingSagaOrchestrator {
         payload.setVnpayPaymentUrl(event.vnpayPaymentUrl());
         payload.setPaymentDeadline(event.paymentDeadline());
 
-        saveSagaState(sagaId, SagaStep.AWAITING_PAYMENT_IPN, payload, null);
+        // FIXED: Skip AWAITING_PAYMENT_IPN, go directly to PENDING_BOOKING_CREATED
+        // Payment processing will handle the transition to PAYMENT_COMPLETED
+        saveSagaState(sagaId, SagaStep.PENDING_BOOKING_CREATED, payload, null);
 
         bookingService.completeSagaInitiationWithPaymentUrl(
                 sagaId,
@@ -600,25 +642,25 @@ public class CreateBookingSagaOrchestrator {
                 payload.getFinalTotalAmount(),
                 payload.getVnpayPaymentUrl(),
                 payload.getPaymentDeadline());
-        log.info("[SAGA_INFO][{}] Saga is now AWAITING_PAYMENT_IPN. Client has been notified. UserBookingRef: {}",
+        log.info("[SAGA_INFO][{}] Saga ready for payment. Client has been notified. UserBookingRef: {}",
                 sagaId, payload.getUserFriendlyBookingReference());
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void cancelSaga(UUID sagaId, String reason) {
         try {
             log.info("[SAGA_CANCEL][{}] Cancelling saga with reason: {}", sagaId, reason);
-            
+
             SagaState sagaState = sagaStateRepository.findById(sagaId).orElse(null);
             if (sagaState != null) {
                 sagaState.setCurrentStep(SagaStep.CANCELLED_CLIENT_TIMEOUT);
+                sagaState.setErrorMessage("Saga cancelled: " + reason);
                 sagaState.setUpdatedAt(LocalDateTime.now());
-                sagaStateRepository.save(sagaState);
-                
+                sagaStateRepository.saveAndFlush(sagaState);
                 log.info("[SAGA_CANCEL][{}] Saga cancelled successfully", sagaId);
             } else {
                 log.warn("[SAGA_CANCEL][{}] Saga state not found for cancellation", sagaId);
             }
-            
         } catch (Exception e) {
             log.error("[SAGA_CANCEL][{}] Error cancelling saga: {}", sagaId, e.getMessage(), e);
         }
@@ -635,16 +677,66 @@ public class CreateBookingSagaOrchestrator {
                 });
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     private void saveSagaState(UUID sagaId, SagaStep currentStep, CreateBookingSagaPayload payload,
                                String errorMessage) {
-        SagaState sagaState = sagaStateRepository.findById(sagaId)
-                .orElseGet(() -> SagaState.builder().sagaId(sagaId).createdAt(LocalDateTime.now()).build());
+        try {
+            String serializedPayload = serializePayload(payload);
 
+            // Use a pessimistic lock to avoid concurrent modifications
+            SagaState sagaState = sagaStateRepository.findById(sagaId).orElse(null);
+            boolean isNewSaga = (sagaState == null);
+
+            if (isNewSaga) {
+                // Create new saga state with error handling for duplicates
+                try {
+                    sagaState = SagaState.builder()
+                            .sagaId(sagaId)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    log.info("[SAGA_STATE_CREATE] Creating new saga state for saga {} with step: {}", sagaId, currentStep);
+
+                    sagaState.setCurrentStep(currentStep);
+                    sagaState.setPayloadJson(serializedPayload);
+                    sagaState.setErrorMessage(errorMessage);
+                    sagaState.setUpdatedAt(LocalDateTime.now());
+                    sagaStateRepository.saveAndFlush(sagaState); // Use saveAndFlush for atomic operation
+
+                    log.info("[SAGA_STATE_CREATE] Created new saga state for saga {} with step: {}", sagaId, currentStep);
+                } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                    // Handle case where saga state was created by another thread/process
+                    log.warn("[SAGA_STATE_CREATE] Saga state already exists for sagaId: {} (race condition), updating instead", sagaId);
+                    sagaState = sagaStateRepository.findById(sagaId).orElseThrow(() ->
+                            new IllegalStateException("Saga state not found after duplicate key error for sagaId: " + sagaId));
+                    updateExistingSagaState(sagaState, currentStep, serializedPayload, errorMessage);
+                }
+            } else {
+                SagaStep oldStep = sagaState.getCurrentStep();
+                log.info("[SAGA_STATE_UPDATE] Updating saga {} from step {} to step {}", sagaId, oldStep, currentStep);
+                updateExistingSagaState(sagaState, currentStep, serializedPayload, errorMessage);
+            }
+        } catch (Exception e) {
+            log.error("[SAGA_STATE_SAVE] Error saving saga state for saga: {}", sagaId, e);
+            throw e;
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private void updateExistingSagaState(SagaState sagaState, SagaStep currentStep,
+                                         String serializedPayload, String errorMessage) {
         sagaState.setCurrentStep(currentStep);
-        sagaState.setPayloadJson(serializePayload(payload));
+        sagaState.setPayloadJson(serializedPayload);
         sagaState.setErrorMessage(errorMessage);
         sagaState.setUpdatedAt(LocalDateTime.now());
-        sagaStateRepository.save(sagaState);
+        sagaStateRepository.saveAndFlush(sagaState); // Use saveAndFlush for atomic operation
+        log.debug("[SAGA_STATE_UPDATE] Successfully updated saga state for saga {}", sagaState.getSagaId());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private void updateExistingSagaState(SagaState sagaState, SagaStep currentStep,
+                                         CreateBookingSagaPayload payload, String errorMessage) {
+        String serializedPayload = serializePayload(payload);
+        updateExistingSagaState(sagaState, currentStep, serializedPayload, errorMessage);
     }
 
     private void updateSagaState(UUID sagaId, SagaStep nextStep, CreateBookingSagaPayload currentPayload) {
@@ -756,7 +848,7 @@ public class CreateBookingSagaOrchestrator {
         }
     }
 
-    @CircuitBreaker(name = "flightServiceCircuitBreaker", fallbackMethod = "checkSeatAvailabilityFallback")
+    @CircuitBreaker(name = "flightServiceCircuitBreaker")
     @Retry(name = "flightServiceRetry")
     private void checkSeatAvailability(UUID sagaId, CreateBookingSagaPayload payload) {
         try {
@@ -765,39 +857,39 @@ public class CreateBookingSagaOrchestrator {
                     .map(seatSelection -> seatSelection.getSeatCode())
                     .toList();
 
-            log.info("[SAGA_STEP][{}] Checking availability for {} seats: {}", 
+            log.info("[SAGA_STEP][{}] Checking availability for {} seats: {}",
                     sagaId, requestedSeatCodes.size(), requestedSeatCodes);
-            
+
             // Log the exact request details
             UUID flightId = payload.getInitialRequest().getFlightId();
-            log.info("[SAGA_DEBUG][{}] About to call Flight Service - FlightId: {}, SeatCodes: {}", 
+            log.info("[SAGA_DEBUG][{}] About to call Flight Service - FlightId: {}, SeatCodes: {}",
                     sagaId, flightId, requestedSeatCodes);
 
             updateSagaState(sagaId, SagaStep.AWAITING_SEAT_AVAILABILITY_RESPONSE, payload);
 
             // Add timeout to prevent indefinite waiting
             long startTime = System.currentTimeMillis();
-            long timeout = 5000; // 5 seconds timeout
-            
+            long timeout = 30000; // 30 seconds timeout (increased from 5 seconds)
+
             // Introduce more robust error handling around the API call
             FsSeatsAvailabilityResponseDTO response = null;
             try {
                 response = flightClient.checkSeatsAvailability(flightId, requestedSeatCodes);
-                
+
                 // Check for timeout
                 long endTime = System.currentTimeMillis();
                 long duration = endTime - startTime;
                 log.info("[SAGA_STEP][{}] Seat availability check completed in {} ms", sagaId, duration);
-                
+
                 if (duration > timeout) {
                     log.warn("[SAGA_STEP][{}] Seat availability check took longer than expected: {} ms", sagaId, duration);
                 }
             } catch (feign.FeignException.InternalServerError e) {
-                log.error("[SAGA_ERROR][{}] Flight Service returned 500 error for seat check: {}", 
+                log.error("[SAGA_ERROR][{}] Flight Service returned 500 error for seat check: {}",
                         sagaId, e.contentUTF8(), e);
                 throw new SagaProcessingException("Flight service internal error: " + e.getMessage());
             } catch (feign.FeignException.BadRequest e) {
-                log.error("[SAGA_ERROR][{}] Flight Service returned 400 error for seat check: {}", 
+                log.error("[SAGA_ERROR][{}] Flight Service returned 400 error for seat check: {}",
                         sagaId, e.contentUTF8(), e);
                 throw new SagaProcessingException("Invalid seat request: " + e.getMessage());
             } catch (feign.FeignException.NotFound e) {
@@ -807,32 +899,32 @@ public class CreateBookingSagaOrchestrator {
                 log.error("[SAGA_ERROR][{}] Timeout connecting to Flight Service: {}", sagaId, e.getMessage(), e);
                 throw new SagaProcessingException("Flight service timeout: " + e.getMessage());
             }
-            
+
             // Thorough response validation
             if (response == null) {
                 throw new SagaProcessingException("Null response received from Flight Service seat availability check");
             }
-            
+
             if (response.getSeatStatuses() == null) {
                 log.warn("[SAGA_STEP][{}] Received malformed seat status response - missing seat statuses array", sagaId);
                 throw new SagaProcessingException("Invalid response format from Flight Service - missing seat statuses");
             }
-            
+
             // Verify seat count in response matches request
             if (response.getSeatStatuses().size() != requestedSeatCodes.size()) {
-                log.warn("[SAGA_STEP][{}] Seat status count mismatch. Requested: {}, Received: {}", 
+                log.warn("[SAGA_STEP][{}] Seat status count mismatch. Requested: {}, Received: {}",
                         sagaId, requestedSeatCodes.size(), response.getSeatStatuses().size());
                 log.warn("[SAGA_STEP][{}] Requested: {}", sagaId, requestedSeatCodes);
-                log.warn("[SAGA_STEP][{}] Received: {}", sagaId, 
+                log.warn("[SAGA_STEP][{}] Received: {}", sagaId,
                         response.getSeatStatuses().stream().map(s -> s.getSeatCode()).toList());
                 throw new SagaProcessingException("Seat status count mismatch from Flight Service");
             }
-            
+
             // Check if all required seats are in the response
             List<String> receivedSeatCodes = response.getSeatStatuses().stream()
                     .map(status -> status.getSeatCode())
                     .toList();
-                    
+
             for (String requestedSeat : requestedSeatCodes) {
                 if (!receivedSeatCodes.contains(requestedSeat)) {
                     log.error("[SAGA_ERROR][{}] Requested seat {} missing from response", sagaId, requestedSeat);
@@ -845,9 +937,9 @@ public class CreateBookingSagaOrchestrator {
                     .filter(status -> !status.isAvailable())
                     .map(status -> status.getSeatCode())
                     .toList();
-                    
+
             boolean allSeatsAvailable = unavailableSeats.isEmpty();
-            
+
             // Build comprehensive event with detailed information
             SeatAvailabilityCheckedEvent event = SeatAvailabilityCheckedEvent.builder()
                     .sagaId(sagaId)
@@ -855,12 +947,12 @@ public class CreateBookingSagaOrchestrator {
                     .requestedSeatCodes(requestedSeatCodes)
                     .allSeatsAvailable(allSeatsAvailable)
                     .unavailableSeats(allSeatsAvailable ? null : unavailableSeats)
-                    .failureReason(allSeatsAvailable ? null : 
+                    .failureReason(allSeatsAvailable ? null :
                             "The following seats are not available: " + String.join(", ", unavailableSeats))
                     .build();
 
             rabbitTemplate.convertAndSend(eventsExchange, RK_INTERNAL_SEAT_AVAILABILITY_CHECKED_EVENT, event);
-            log.info("[SAGA_STEP][{}] Published SeatAvailabilityCheckedEvent. All seats available: {}", 
+            log.info("[SAGA_STEP][{}] Published SeatAvailabilityCheckedEvent. All seats available: {}",
                     sagaId, allSeatsAvailable);
 
             if (!allSeatsAvailable) {
@@ -872,68 +964,24 @@ public class CreateBookingSagaOrchestrator {
             handleSeatAvailabilityError(sagaId, payload, "SEAT_AVAILABILITY_CHECK_FAILED: " + e.getMessage());
         }
     }
-    
-    // Fallback method for circuit breaker
-    private void checkSeatAvailabilityFallback(UUID sagaId, CreateBookingSagaPayload payload, Exception e) {
-        log.warn("[SAGA_CIRCUIT_BREAKER][{}] Circuit breaker triggered for seat availability check: {}", 
-                sagaId, e.getMessage());
-                
-        if (e instanceof TimeoutException) {
-            log.warn("[SAGA_CIRCUIT_BREAKER][{}] Flight Service timeout - proceeding with booking without seat check", sagaId);
-        }
-        
-        try {
-            // Get user-friendly version of the exception for logging and tracking
-            String errorType = e.getClass().getSimpleName();
-            String errorMessage = e.getMessage();
-            log.info("[SAGA_FALLBACK][{}] Handling {} with message: {}", sagaId, errorType, errorMessage);
-            
-            // Business decision: For specific error types, we could proceed without seat check
-            // This should be based on business requirements about seat selection importance
-            boolean shouldProceedWithBooking = e instanceof TimeoutException || 
-                                              (e instanceof feign.RetryableException) ||
-                                              (e.getMessage() != null && e.getMessage().contains("timeout"));
-            
-            if (shouldProceedWithBooking) {
-                log.warn("[SAGA_FALLBACK][{}] Proceeding with booking creation despite seat check failure", sagaId);
-                // Mark seats as not checked but continue process
-                saveSagaState(sagaId, SagaStep.SEAT_AVAILABILITY_CHECKED, payload, 
-                        "Seat check bypassed due to Flight Service circuit breaker: " + e.getMessage());
-                sendCreatePendingBookingInternalCommand(sagaId, payload);
-            } else {
-                // For other errors, fail the saga
-                log.error("[SAGA_FALLBACK][{}] Cannot proceed with booking due to critical seat check error", sagaId);
-                handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING, 
-                        "SEAT_AVAILABILITY_CHECK_FAILED: " + e.getMessage(), payload);
-                bookingService.failSagaInitiationBeforePaymentUrl(sagaId, payload.getUserFriendlyBookingReference(),
-                        "Unable to check seat availability. Please try selecting different seats or try again later.");
-            }
-        } catch (Exception fallbackError) {
-            log.error("[SAGA_ERROR][{}] Fallback method failed: {}", sagaId, fallbackError.getMessage(), fallbackError);
-            handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING, 
-                    "SEAT_AVAILABILITY_FALLBACK_FAILED: " + fallbackError.getMessage(), payload);
-            bookingService.failSagaInitiationBeforePaymentUrl(sagaId, payload.getUserFriendlyBookingReference(),
-                    "System error during seat availability check. Please try again later.");
-        }
-    }
-    
+
     // Centralized method to handle seat availability errors
     private void handleSeatAvailabilityError(UUID sagaId, CreateBookingSagaPayload payload, String errorReason) {
         try {
             // Extract error type for more specific handling
             String errorType = errorReason.split(":")[0].trim();
-            
+
             // For certain error types, we might want to proceed anyway (this is a business decision)
-            if (errorType.equals("FLIGHT_SERVICE_500_ERROR") || 
-                errorType.equals("FLIGHT_SERVICE_TIMEOUT")) {
-                
+            if (errorType.equals("FLIGHT_SERVICE_500_ERROR") ||
+                    errorType.equals("FLIGHT_SERVICE_TIMEOUT")) {
+
                 log.warn("[SAGA_RECOVERY][{}] Attempting recovery from Flight Service error: {}", sagaId, errorType);
-                saveSagaState(sagaId, SagaStep.SEAT_AVAILABILITY_CHECKED, payload, 
+                saveSagaState(sagaId, SagaStep.SEAT_AVAILABILITY_CHECKED, payload,
                         "Seat check bypassed due to Flight Service error: " + errorReason);
                 sendCreatePendingBookingInternalCommand(sagaId, payload);
                 return;
             }
-            
+
             // Handle specific error cases with user-friendly messages
             String userMessage;
             switch (errorType) {
@@ -946,15 +994,15 @@ public class CreateBookingSagaOrchestrator {
                 default:
                     userMessage = "Failed to check seat availability. Please try again later.";
             }
-            
+
             // For other errors, fail the saga
             handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING, errorReason, payload);
             bookingService.failSagaInitiationBeforePaymentUrl(sagaId, payload.getUserFriendlyBookingReference(),
                     userMessage);
-                    
+
         } catch (Exception fallbackError) {
             log.error("[SAGA_ERROR][{}] Error handling failed: {}", sagaId, fallbackError.getMessage(), fallbackError);
-            handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING, 
+            handleSagaFailure(sagaId, SagaStep.FAILED_PROCESSING,
                     "SEAT_AVAILABILITY_ERROR_HANDLING_FAILED: " + fallbackError.getMessage(), payload);
             bookingService.failSagaInitiationBeforePaymentUrl(sagaId, payload.getUserFriendlyBookingReference(),
                     "System error during seat availability check. Please try again later.");
@@ -969,14 +1017,14 @@ public class CreateBookingSagaOrchestrator {
         if (availableFareName == null || requestedFareName == null) {
             return false;
         }
-        
+
         // Normalize both names for comparison
         String normalizedAvailable = normalizeFareName(availableFareName);
         String normalizedRequested = normalizeFareName(requestedFareName);
-        
+
         return normalizedAvailable.equals(normalizedRequested);
     }
-    
+
     /**
      * Normalizes fare names to handle different naming conventions.
      */
@@ -984,12 +1032,12 @@ public class CreateBookingSagaOrchestrator {
         if (fareName == null) {
             return "";
         }
-        
+
         String normalized = fareName.toLowerCase()
                 .replace("_", " ")
                 .replace("-", " ")
                 .trim();
-        
+
         // Handle common variations
         if (normalized.contains("first")) {
             return "first";
@@ -1000,8 +1048,25 @@ public class CreateBookingSagaOrchestrator {
         } else if (normalized.contains("premium")) {
             return "premium";
         }
-        
+
         return normalized;
+    }
+
+    /**
+     * Helper method to calculate available seats for a fare
+     *
+     * @param fare The fare to calculate available seats for
+     * @return Number of available seats
+     */
+    private int calculateAvailableSeats(FsDetailedFareDTO fare) {
+        if (fare == null) {
+            return 0;
+        }
+
+        int totalSeats = fare.getTotalSeats();
+        int occupiedSeats = fare.getOccupiedSeats() != null ? fare.getOccupiedSeats().size() : 0;
+
+        return Math.max(0, totalSeats - occupiedSeats);
     }
 
     @Data
@@ -1021,4 +1086,30 @@ public class CreateBookingSagaOrchestrator {
         private LocalDateTime paymentDeadline;
     }
 
+    @RabbitListener(queues = "${app.rabbitmq.queues.internalSeatAvailabilityChecked}")
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void handleSeatAvailabilityChecked(SeatAvailabilityCheckedEvent event) {
+        UUID sagaId = event.getSagaId();
+        log.info("[SAGA_EVENT][{}] Received SeatAvailabilityCheckedEvent. All seats available: {}",
+                sagaId, event.isAllSeatsAvailable());
+
+        SagaState sagaState = loadSagaState(sagaId);
+        CreateBookingSagaPayload payload = deserializePayload(sagaState.getPayloadJson());
+
+        if (!event.isAllSeatsAvailable()) {
+            String failureReason = event.getFailureReason();
+            log.warn("[SAGA_EVENT][{}] Seats unavailable: {}", sagaId, failureReason);
+            handleSagaFailure(sagaId, SagaStep.FAILED_SEAT_UNAVAILABLE, failureReason, payload);
+            bookingService.failSagaInitiationBeforePaymentUrl(sagaId, payload.getUserFriendlyBookingReference(),
+                    failureReason != null ? failureReason : "Selected seats are not available.");
+            return;
+        }
+
+        // Mark the step as completed
+        saveSagaState(sagaId, SagaStep.SEAT_AVAILABILITY_CHECKED, payload, null);
+        log.info("[SAGA_STEP][{}] Seat availability check successful, proceeding to create pending booking.", sagaId);
+
+        // Proceed with creating the pending booking
+        sendCreatePendingBookingInternalCommand(sagaId, payload);
+    }
 }

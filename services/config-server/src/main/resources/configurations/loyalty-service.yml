@@ -1,11 +1,15 @@
 server:
+  address: 0.0.0.0
   port: 8085
+  servlet:
+    context-path: /loyalty-service
+
 spring:
   datasource:
-#    driver-class-name: org.postgresql.Driver
-#    url: jdbc:postgresql://18.139.219.235:5433/loyalty_db
-#    username: boeing
-#    password: boeing
+    #    driver-class-name: org.postgresql.Driver
+    #    url: jdbc:postgresql://18.139.219.235:5433/loyalty_db
+    #    username: boeing
+    #    password: boeing
     url: jdbc:postgresql://localhost:5432/loyalty_db
     username: postgres
     password: 12345
@@ -13,23 +17,45 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
 
 springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
   api-docs:
     path: /api-docs
-  swagger-ui:
-    path: /
-    operationsSorter: method
-    tagsSorter: alpha
-    tryItOutEnabled: true
+  default-produces-media-type: application/json
 
 membership:
   silver:
     points: 1000
-    rate: 0.05
+    rate: 0.01
   gold:
     points: 5000
-    rate: 0.10
+    rate: 0.015
   platinum:
     points: 10000
-    rate: 0.15
+    rate: 0.02
+
+loyalty:
+  points:
+    calculation:
+      max-amount: 200000000  # 200 million VND (reasonable for flight bookings)
+      max-points-per-transaction: 2000000  # 2 million points max per transaction to accommodate large bookings
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: false
+    hostname: ${EUREKA_HOSTNAME:localhost}
+
+external:
+  authentication:
+    url: ${AUTHENTICATION_SERVICE_URL:http://localhost:8086}
+    endpoint: /api/v1/identity/validate-token

@@ -6,14 +6,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FsAircraftDTO {
-    private String id;
+    private UUID id;
     private String code;
     private String model;
-    private FsAircraftTypeDTO type;
 }

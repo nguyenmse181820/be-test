@@ -11,8 +11,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FsBenefitDTO {
-    private UUID benefitId;
+    private UUID id;
     private String name;
     private String description;
-    private String iconUrl;
+    private String iconURL;
 }

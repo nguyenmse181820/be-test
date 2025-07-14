@@ -53,6 +53,22 @@ public class Booking extends BaseEntity {
     @Column(name = "applied_voucher_code")
     private String appliedVoucherCode;
 
+    // Loyalty Integration Fields
+    @Column(name = "voucher_code")
+    private String voucherCode;
+    
+    @Column(name = "voucher_discount_amount")
+    private Double voucherDiscountAmount;
+    
+    @Column(name = "points_earned")
+    private Integer pointsEarned;
+    
+    @Column(name = "loyalty_transaction_id")
+    private String loyaltyTransactionId;
+    
+    @Column(name = "original_amount")
+    private Double originalAmount;
+
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     private List<BookingDetail> bookingDetails = new ArrayList<>();
@@ -60,6 +76,10 @@ public class Booking extends BaseEntity {
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     private List<Payment> payments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private List<BaggageAddon> baggageAddons = new ArrayList<>();
 
     // Helper method to get passenger count
     public int getPassengerCount() {

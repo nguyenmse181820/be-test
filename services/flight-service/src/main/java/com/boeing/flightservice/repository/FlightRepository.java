@@ -23,7 +23,7 @@ public interface FlightRepository extends JpaRepository<Flight, UUID>, JpaSpecif
             Airport destination,
             Airport origin
     );
-    
+
     // Added for connecting flights search - finds all flights departing from a specific origin
     List<Flight> findByDepartureTimeGreaterThanEqualAndStatusAndDeletedAndOrigin(
             LocalDateTime departureTimeIsGreaterThan,
@@ -31,7 +31,7 @@ public interface FlightRepository extends JpaRepository<Flight, UUID>, JpaSpecif
             Boolean deleted,
             Airport origin
     );
-    
+
     // Added for connecting flights search - finds flights between layover airport and final destination
     List<Flight> findByDepartureTimeBetweenAndStatusAndDeletedAndOriginAndDestination(
             LocalDateTime departureTimeStart,
@@ -41,4 +41,10 @@ public interface FlightRepository extends JpaRepository<Flight, UUID>, JpaSpecif
             Airport origin,
             Airport destination
     );
+
+    List<Flight> findByAircraftIdAndDeleted(UUID aircraftId, Boolean deleted);
+    
+    boolean existsByCodeAndDeleted(String code, Boolean deleted);
+    
+    Flight findByCodeAndDeleted(String code, Boolean deleted);
 }

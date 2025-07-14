@@ -2,6 +2,8 @@ package com.boeing.loyalty.controller;
 
 import com.boeing.loyalty.dto.APIResponse;
 import com.boeing.loyalty.dto.membership.EarnPointsRequestDTO;
+import com.boeing.loyalty.dto.voucher.UseVoucherRequestDTO;
+import com.boeing.loyalty.dto.voucher.ValidateVoucherRequestDTO;
 import com.boeing.loyalty.service.LoyaltyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -10,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -77,6 +80,64 @@ public class LoyaltyController {
             @PathVariable String bookingId) {
         return ResponseEntity.ok(APIResponse.builder()
                 .data(loyaltyService.adjustPoints(bookingId))
+                .build());
+    }
+
+    @Operation(summary = "Clean up orphaned transactions", description = "Admin endpoint to clean up orphaned loyalty point transactions")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cleanup completed successfully"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @PostMapping("/admin/cleanup-orphaned-transactions")
+    public ResponseEntity<APIResponse> cleanupOrphanedTransactions() {
+        return ResponseEntity.ok(APIResponse.builder()
+                .data(loyaltyService.cleanupOrphanedTransactions())
+                .build());
+    }
+
+    @Operation(summary = "Validate a voucher", description = "Validates a voucher for booking usage and returns discount information")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Voucher validation completed"),
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters")
+    })
+    @PostMapping("/vouchers/validate")
+    public ResponseEntity<APIResponse> validateVoucher(
+            @Parameter(description = "Voucher validation request", required = true)
+            @RequestBody ValidateVoucherRequestDTO request) {
+        return ResponseEntity.ok(APIResponse.builder()
+                .data(loyaltyService.validateVoucher(request))
+                .build());
+    }
+
+    @Operation(summary = "Use a voucher with request body", description = "Marks a voucher as used for booking with detailed request")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Voucher used successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid voucher or already used"),
+            @ApiResponse(responseCode = "400", description = "Voucher not found")
+    })
+    @PostMapping("/vouchers/use")
+    public ResponseEntity<APIResponse> useVoucherWithRequest(
+            @Parameter(description = "Use voucher request details", required = true)
+            @RequestBody UseVoucherRequestDTO request) {
+        return ResponseEntity.ok(APIResponse.builder()
+                .data(loyaltyService.useVoucherWithRequest(request))
+                .build());
+    }
+
+    @Operation(summary = "Cancel voucher usage", description = "Restores a voucher to unused state (rollback)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Voucher usage cancelled successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid voucher or user"),
+            @ApiResponse(responseCode = "400", description = "Voucher not found")
+    })
+    @PostMapping("/vouchers/cancel")
+    public ResponseEntity<APIResponse> cancelVoucherUsage(
+            @Parameter(description = "Voucher code to cancel", required = true)
+            @RequestParam String voucherCode,
+            @Parameter(description = "User ID", required = true)
+            @RequestParam UUID userId) {
+        return ResponseEntity.ok(APIResponse.builder()
+                .data(loyaltyService.cancelVoucherUsage(voucherCode, userId))
                 .build());
     }
 }

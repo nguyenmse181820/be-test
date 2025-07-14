@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: aircraftservice
+  config:
+    import: ${CONFIG_URI:optional:configserver:http://localhost:8888}

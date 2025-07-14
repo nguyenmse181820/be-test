@@ -17,7 +17,10 @@ spring:
     name: check-in-service
 
 server:
+  servlet:
+    context-path: /check-in-service
   port: 8083
+  address: 0.0.0.0
 
 springdoc:
   swagger-ui:
@@ -25,3 +28,15 @@ springdoc:
   api-docs:
     path: /api-docs
   default-produces-media-type: application/json
+
+jwt:
+  secret:
+    key: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: false
+    hostname: ${EUREKA_HOSTNAME:localhost}

@@ -15,4 +15,7 @@ public class FlightSummaryInBookingDTO {
     private String originAirportCode;
     private String destinationAirportCode;
     private LocalDateTime departureTime;
+    private LocalDateTime arrivalTime;
+    private String aircraftCode;
+    private Double segmentPrice; // Price for this segment
 }

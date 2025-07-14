@@ -1,11 +1,16 @@
 package com.boeing.loyalty.dto.voucher;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
@@ -27,6 +32,7 @@ public class VoucherTemplateResponseDTO {
     private LocalDate endDate;
     
     private Integer usageLimit;
+    private Integer pointsRequired;
     private String status;
     
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

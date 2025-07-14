@@ -24,8 +24,8 @@ public class Aircraft extends BaseEntity {
 
     @Column(nullable = false, unique = true)
     String code;
-    @ManyToOne
 
+    @ManyToOne
     @JoinColumn(name = "aircraft_type_id")
     AircraftType aircraftType;
 }

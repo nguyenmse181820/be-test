@@ -1,0 +1,343 @@
+@startuml
+
+class User {
+  - UUID id
+  - String email
+  - String password
+  - String firstName
+  - String lastName
+  - LocalDate dob
+  - String phone
+  - String gender
+  - boolean enabled
+  - String nationality
+  - String role
+}
+
+class Notification {
+  - UUID id
+  - String type
+  - String contentRendered
+  - String status
+  - String errorMessage
+  - LocalDateTime sentAt
+}
+
+class NotificationTemplate {
+  - UUID id
+  - TypeNoti type
+  - String code
+  - String subject
+  - String content
+  - boolean active
+}
+
+class Aircraft {
+  - UUID id
+  - String code
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+  - boolean deleted
+}
+
+class AircraftType {
+  - UUID id
+  - String model
+  - Map<String, Object> seatMap
+  - String manufacturer
+  - Integer totalSeats
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+  - boolean deleted
+}
+
+class Flight {
+  - UUID id
+  - String code
+  - UUID aircraftId
+  - LocalDateTime departureTime
+  - LocalDateTime estimatedArrivalTime
+  - Integer flightDurationMinutes
+  - FlightStatus status
+  - Boolean deleted
+}
+
+class Airport {
+  - UUID id
+  - String name
+  - String code
+  - String city
+  - String country
+  - String timezone
+  - Double latitude
+  - Double longitude
+  - Boolean deleted
+}
+
+class FlightFare {
+  - UUID id
+  - Double minPrice
+  - Double maxPrice
+  - String name
+  - FareType fareType
+  - String seats
+  - Boolean deleted
+}
+
+class Route {
+  - UUID id
+  - Integer estimatedDurationMinutes
+  - Boolean deleted
+}
+
+class Seat {
+  - UUID id
+  - String seatCode
+  - String bookingReference
+  - Double price
+  - Boolean deleted
+}
+
+class Benefit {
+  - UUID id
+  - String name
+  - String description
+  - String iconURL
+  - Boolean deleted
+}
+
+class Booking {
+  - UUID id
+  - LocalDate bookingDate
+  - Double totalAmount
+  - BookingStatus status
+  - BookingType type
+  - UUID userId
+  - String bookingReference
+  - LocalDateTime paymentDeadline
+  - String appliedVoucherCode
+  - String voucherCode
+  - Double voucherDiscountAmount
+  - Integer pointsEarned
+  - String loyaltyTransactionId
+  - Double originalAmount
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+}
+
+class BookingDetail {
+  - UUID id
+  - UUID flightId
+  - String flightCode
+  - String originAirportCode
+  - String destinationAirportCode
+  - LocalDateTime departureTime
+  - LocalDateTime arrivalTime
+  - BookingDetailStatus status
+  - Double price
+  - String selectedFareName
+  - String selectedSeatCode
+  - String bookingCode
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+}
+
+class Passenger {
+  - UUID id
+  - String firstName
+  - String lastName
+  - String familyName
+  - LocalDate dateOfBirth
+  - PassengerGender gender
+  - String nationality
+  - PassengerTitle title
+  - String idNumber
+  - String passportNumber
+  - String countryOfIssue
+  - LocalDate passportExpiryDate
+  - UUID userId
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+}
+
+class Payment {
+  - UUID id
+  - Long orderCode
+  - String bookingReference
+  - Double amount
+  - String vnpTxnRef
+  - PaymentStatus status
+  - PaymentType paymentType
+  - String currency
+  - String description
+  - String vnpResponseCode
+  - String vnpTransactionNo
+  - LocalDateTime paymentDate
+  - PaymentMethod paymentMethod
+  - String transactionId
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+}
+
+class BaggageAddon {
+  - UUID id
+  - Integer passengerIndex
+  - Double baggageWeight
+  - Double price
+  - UUID flightId
+  - BaggageAddonType type
+  - LocalDateTime purchaseTime
+  - Boolean isPostBooking
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+}
+
+class RefundRequest {
+  - UUID id
+  - String refundRequestId
+  - UUID bookingId
+  - String bookingReference
+  - BigDecimal originalAmount
+  - BigDecimal refundAmount
+  - String reason
+  - String status
+  - String requestedBy
+  - LocalDateTime requestedAt
+  - String processedBy
+  - LocalDateTime processedAt
+  - String notes
+  - String transactionProofUrl
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+}
+
+class RescheduleFlightHistory {
+  - UUID id
+  - UUID oldFlightId
+  - UUID newFlightId
+  - String oldSeatCode
+  - String newSeatCode
+  - Double oldPrice
+  - Double newPrice
+  - Double priceDifference
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+}
+
+class BoardingPass {
+  - UUID id
+  - String barcode
+  - LocalDateTime boardingTime
+  - LocalDateTime issuedAt
+  - LocalDateTime checkinTime
+  - String seatCode
+  - String gate
+  - String sequenceNumber
+  - UUID bookingDetailId
+}
+
+class Baggage {
+  - UUID id
+  - Double weight
+  - String tagCode
+  - BaggageStatus status
+}
+
+class Membership {
+  - UUID id
+  - UUID userId
+  - MembershipTier tier
+  - Integer points
+  - Integer totalEarnedPoints
+  - Double totalSpent
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+}
+
+class LoyaltyPointTransaction {
+  - UUID id
+  - PointType type
+  - String source
+  - Integer points
+  - String note
+  - LocalDateTime createdAt
+}
+
+class UserVoucher {
+  - UUID id
+  - String code
+  - Double discountAmount
+  - Boolean isUsed
+  - LocalDateTime usedAt
+  - LocalDateTime expiresAt
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+}
+
+class VoucherTemplate {
+  - UUID id
+  - String code
+  - String name
+  - String description
+  - Integer discountPercentage
+  - Double minSpend
+  - Double maxDiscount
+  - LocalDate startDate
+  - LocalDate endDate
+  - Integer usageLimit
+  - Integer pointsRequired
+  - VoucherStatus status
+  - LocalDateTime createdAt
+  - LocalDateTime updatedAt
+}
+
+class RewardItem {
+  - UUID id
+  - String name
+  - String description
+  - RewardType type
+  - Integer requiredPoints
+  - Integer availableQuantity
+  - Integer maximumQuantityPerUser
+  - Boolean isActive
+}
+
+class RewardRedemption {
+  - UUID id
+  - LocalDateTime createdAt
+}
+
+User ||--o{ Notification
+NotificationTemplate ||--o{ Notification
+Aircraft }o--|| AircraftType
+Flight }o--|| Airport
+Flight }o--|| Airport
+Flight ||--o{ FlightFare
+Flight ||--o{ Seat
+FlightFare }o--o{ Benefit
+FlightFare ||--o{ Seat
+Route }o--|| Airport
+Route }o--|| Airport
+Booking ||--o{ BookingDetail
+Booking ||--o{ Payment
+Booking ||--o{ BaggageAddon
+BookingDetail }o--|| Passenger
+BookingDetail ||--o{ RescheduleFlightHistory
+BoardingPass ||--o{ Baggage
+Membership ||--o{ LoyaltyPointTransaction
+Membership ||--o{ UserVoucher
+Membership ||--o{ RewardRedemption
+VoucherTemplate ||--o{ UserVoucher
+RewardItem ||--o{ RewardRedemption
+Booking ||--|| User
+Passenger ||--|| User
+BookingDetail ||--|| Flight
+Flight ||--|| Aircraft
+BoardingPass ||--|| BookingDetail
+Membership ||--|| User
+BaggageAddon ||--|| Flight
+RefundRequest ||--|| Booking
+RescheduleFlightHistory ||--|| Flight : oldFlightId
+RescheduleFlightHistory ||--|| Flight : newFlightId
+
+@enduml

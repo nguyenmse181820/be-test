@@ -39,6 +39,7 @@ public class VoucherTemplateService {
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .usageLimit(request.getUsageLimit())
+                .pointsRequired(request.getPointsRequired())
                 .status(VoucherStatus.valueOf(request.getStatus()))
                 .build();
 
@@ -83,6 +84,7 @@ public class VoucherTemplateService {
         template.setStartDate(request.getStartDate());
         template.setEndDate(request.getEndDate());
         template.setUsageLimit(request.getUsageLimit());
+        template.setPointsRequired(request.getPointsRequired());
         template.setStatus(VoucherStatus.valueOf(request.getStatus()));
 
         template = voucherTemplateRepository.save(template);
@@ -109,6 +111,7 @@ public class VoucherTemplateService {
                 .startDate(template.getStartDate())
                 .endDate(template.getEndDate())
                 .usageLimit(template.getUsageLimit())
+                .pointsRequired(template.getPointsRequired())
                 .status(template.getStatus().name())
                 .createdAt(template.getCreatedAt())
                 .updatedAt(template.getUpdatedAt())

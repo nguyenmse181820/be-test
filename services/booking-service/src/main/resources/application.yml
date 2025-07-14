@@ -1,9 +1,21 @@
 spring:
   config:
-    import: optional:configserver:http://localhost:8888
+    import: ${CONFIG_URI:optional:configserver:http://localhost:8888}
   application:
     name: booking-service
-    
+
+  # JPA Configuration with PostgreSQL optimizations
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        connection:
+          provider_disables_autocommit: false
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
 # RabbitMQ Configuration
 app:
   rabbitmq:
@@ -34,15 +46,26 @@ services:
   flight-service:
     url: ${FLIGHT_SERVICE_URL:http://localhost:8084}
   loyalty-service:
-    url: ${LOYALTY_SERVICE_URL:http://localhost:8086}
-  user-service:
-    url: ${USER_SERVICE_URL:http://localhost:8081}
+    url: ${LOYALTY_SERVICE_URI:http://localhost:8085}
   notification-service:
     url: ${NOTIFICATION_SERVICE_URL:http://localhost:8089}
 
 # Frontend configuration
 frontend:
-  url: ${FRONTEND_URL:http://localhost:5173}
+  url: ${FRONTEND_URI:http://localhost:5173}
+
+# Feign Configuration
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 10000
+        readTimeout: 30000
+        loggerLevel: basic
+      loyalty-service:
+        connectTimeout: 10000
+        readTimeout: 30000
+        loggerLevel: basic
 
 # Resilience4j Circuit Breaker Configuration
 resilience4j:
@@ -63,9 +86,30 @@ resilience4j:
           - java.util.concurrent.TimeoutException
           - java.io.IOException
           - com.boeing.bookingservice.exception.SagaProcessingException
+      loyaltyServiceCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+        registerHealthIndicator: true
+        allowHealthIndicatorToFail: false
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - feign.FeignException
+          - java.util.concurrent.TimeoutException
+          - java.io.IOException
   retry:
     instances:
       flightServiceRetry:
+        maxAttempts: 3
+        waitDuration: 1000
+        retryExceptions:
+          - feign.RetryableException
+          - java.util.concurrent.TimeoutException
+          - java.io.IOException
+      loyaltyServiceRetry:
         maxAttempts: 3
         waitDuration: 1000
         retryExceptions:
@@ -85,8 +129,20 @@ management:
       enabled: true
     retries:
       enabled: true
-      
+
 # Server context path configuration
 server:
   servlet:
     context-path: /booking-service
+
+# Logging configuration
+logging:
+  level:
+    # Hide Hibernate SQL queries
+    org.hibernate.SQL: ERROR
+    org.hibernate.type.descriptor.sql.BasicBinder: ERROR
+    org.hibernate.orm.jdbc.bind: ERROR
+    org.springframework.orm.jpa: ERROR
+    # Keep your application logs visible
+    com.boeing.bookingservice: INFO
+    root: INFO

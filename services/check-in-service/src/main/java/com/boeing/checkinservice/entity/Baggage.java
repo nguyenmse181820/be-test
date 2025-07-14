@@ -19,11 +19,6 @@ import java.util.UUID;
 public class Baggage extends Auditable {
 
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(
-            name = "UUID",
-            strategy = "org.hibernate.id.UUIDGenerator"
-    )
     @Column(updatable = false, nullable = false)
     UUID id;
 

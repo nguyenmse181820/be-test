@@ -1,11 +1,16 @@
 server:
+  address: 0.0.0.0
   port: 8080
 spring:
   cloud:
+    loadbalancer:
+      ribbon:
+        enabled: true
     gateway:
       discovery:
         locator:
           enabled: true
+          refresh-rate: 10s
       routes:
         - id: user-service
           uri: lb://USER-SERVICE
@@ -25,7 +30,7 @@ spring:
         - id: check-in-service
           uri: lb://CHECK-IN-SERVICE
           predicates:
-            - Path=/api/v1/checkin/**
+            - Path=/check-in-service/**
 
         - id: aircraft-service
           uri: lb://AIRCRAFTSERVICE
@@ -33,7 +38,7 @@ spring:
             - Path=/air-craft/**
 
         - id: loyalty-service
-          uri: lb:http://LOYALTY-SERVICE
+          uri: lb://LOYALTY-SERVICE
           predicates:
             - Path=/loyalty-service/**
 
@@ -51,8 +56,13 @@ spring:
           filters:
             - RewritePath=/check-in-service(?<segment>/?.*), $\{segment}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh, health, info, routes
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}

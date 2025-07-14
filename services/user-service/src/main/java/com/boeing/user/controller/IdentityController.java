@@ -2,8 +2,10 @@ package com.boeing.user.controller;
 
 import com.boeing.user.dto.request.*;
 import com.boeing.user.dto.response.ApiResponse;
+import com.boeing.user.dto.security.Token;
 import com.boeing.user.service.IdentityService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,6 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class IdentityController {
 
     private final IdentityService identityService;
+
+    @PostMapping("/validate-token")
+    public ResponseEntity<Token.ValidationResponse> validateToken(
+            @RequestBody Token.ValidationRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(identityService.validateToken(request));
+    }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Object>> register(@RequestBody RegisterRequest request) {

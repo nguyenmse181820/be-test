@@ -3,6 +3,7 @@ package com.boeing.bookingservice.controller;
 import com.boeing.bookingservice.model.entity.RefundRequest;
 import com.boeing.bookingservice.service.RefundRequestService;
 import com.boeing.bookingservice.repository.RefundRequestRepository;
+import com.boeing.bookingservice.dto.request.ApproveRefundRequestDTO;
 import com.boeing.bookingservice.security.AuthenticatedUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,13 +60,25 @@ public class RefundRequestController {
     @PreAuthorize("hasAnyAuthority('ADMIN', 'STAFF')")
     public ResponseEntity<String> approveRefundRequest(
             @PathVariable String refundRequestId,
+            @RequestBody(required = false) ApproveRefundRequestDTO approveRequest,
             Authentication authentication) {
         
         UUID userId = getUserIdFromAuthentication(authentication);
         String userFullName = getFullNameFromAuthentication(authentication);
         
         try {
+            // Update refund request status
             refundRequestService.updateRefundRequestStatus(refundRequestId, "APPROVED", userFullName);
+            
+            // Update additional info if provided
+            if (approveRequest != null) {
+                updateAdditionalRefundInfo(
+                    refundRequestId, 
+                    approveRequest.getTransactionProofUrl(), 
+                    approveRequest.getNotes()
+                );
+            }
+            
             return ResponseEntity.ok("Refund request approved successfully");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error approving refund request: " + e.getMessage());

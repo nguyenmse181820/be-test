@@ -17,4 +17,6 @@ public class BaggageDtoResponse {
     private Double weight;
 
     private String tagCode;
+
+    private String type;
 }

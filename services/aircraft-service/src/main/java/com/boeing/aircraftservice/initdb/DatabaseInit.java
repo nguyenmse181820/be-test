@@ -47,14 +47,14 @@ public class DatabaseInit implements CommandLineRunner {
         // 3. Boeing 737
         AircraftType type3 = createAircraftType(
                 "Boeing 737", "Boeing", List.of(
-                        new SeatSection("economy", "3-3", 1, 6)
+                        new SeatSection("economy", "3-3-3", 1, 6)
                 )
         );
 
         // 4. ATR 72
         AircraftType type4 = createAircraftType(
                 "ATR 72", "ATR", List.of(
-                        new SeatSection("economy", "2-2", 1, 5),
+                        new SeatSection("economy", "2-2-2", 1, 5),
                         new SpaceSection("space1", "galley", 6, 6)
                 )
         );
@@ -62,7 +62,7 @@ public class DatabaseInit implements CommandLineRunner {
         // 5. Airbus A320
         AircraftType type5 = createAircraftType(
                 "Airbus A320", "Airbus", List.of(
-                        new SeatSection("economy", "3-3", 1, 8)
+                        new SeatSection("economy", "3-3-4", 1, 8)
                 )
         );
 
@@ -140,115 +140,3 @@ public class DatabaseInit implements CommandLineRunner {
     private record SeatSection(String name, String pattern, int fromRow, int toRow) implements Section {}
     private record SpaceSection(String name, String label, int fromRow, int toRow) implements Section {}
 }
-
-//@Component
-//@RequiredArgsConstructor
-//public class DatabaseInit implements CommandLineRunner {
-//
-//    private final AircraftTypeRepository aircraftTypeRepository;
-//    private final AircraftRepository aircraftRepository;
-//
-//    @Override
-//    public void run(String... args) {
-//        if (aircraftTypeRepository.count() == 0) {
-//            initAircrafts();
-//        }
-//    }
-//
-//    private void initAircrafts() {
-//        saveAircraft("VN-A777", "Boeing 777", "Boeing", 1, List.of(
-//                new SeatSection("first", "1-1-1", 1, 2),
-//                new SpaceSection("space1", "galley", 3, 3),
-//                new SeatSection("business", "2-2-2", 4, 6),
-//                new SpaceSection("space2", "toilet", 7, 7),
-//                new SeatSection("economy", "3-4-3", 8, 12)
-//        ));
-//
-//        saveAircraft("VN-A350", "Airbus A350", "Airbus", 1, List.of(
-//                new SeatSection("business", "1-2-1", 1, 3),
-//                new SpaceSection("space1", "galley", 4, 4),
-//                new SeatSection("economy", "3-3-3", 5, 9)
-//        ));
-//
-//        saveAircraft("VN-B737", "Boeing 737", "Boeing", 1, List.of(
-//                new SeatSection("economy", "3-3", 1, 6)
-//        ));
-//    }
-//
-//    private void saveAircraft(String code, String model, String manufacturer, int decks, List<Section> sections) {
-//        AircraftType type = new AircraftType();
-//        type.setModel(model);
-//        type.setManufacturer(manufacturer);
-//        aircraftTypeRepository.save(type);
-//
-//        Map<String, Object> layout = new LinkedHashMap<>();
-//        Map<String, Integer> seatCountByType = new HashMap<>();
-//
-//        for (Section section : sections) {
-//            if (section instanceof SeatSection seatSection) {
-//                List<String> columns = getSeatColumns(seatSection.pattern());
-//                List<Map<String, Object>> seats = new ArrayList<>();
-//                for (int row = seatSection.fromRow(); row <= seatSection.toRow(); row++) {
-//                    for (String col : columns) {
-//                        seats.add(Map.of(
-//                                "seatCode", col + row,
-//                                "status", "AVAILABLE"
-//                        ));
-//                    }
-//                }
-//
-//                layout.put(seatSection.name(), Map.of(
-//                        "pattern", seatSection.pattern(),
-//                        "fromRow", seatSection.fromRow(),
-//                        "toRow", seatSection.toRow(),
-//                        "seats", seats
-//                ));
-//
-//                seatCountByType.merge(seatSection.name(), seats.size(), Integer::sum);
-//            } else if (section instanceof SpaceSection spaceSection) {
-//                layout.put(spaceSection.name(), Map.of(
-//                        "type", "space",
-//                        "label", spaceSection.label(),
-//                        "fromRow", spaceSection.fromRow(),
-//                        "toRow", spaceSection.toRow()
-//                ));
-//            }
-//        }
-//
-//        Aircraft aircraft = new Aircraft();
-//        aircraft.setCode(code);
-//        aircraft.setAircraftType(type);
-//        aircraft.setSeatMap(Map.of(
-//                "decks", decks,
-//                "layout", layout
-//        ));
-//        aircraftRepository.save(aircraft);
-//
-//        List<AircraftSeatType> seatTypes = seatCountByType.entrySet().stream()
-//                .map(e -> {
-//                    AircraftSeatType seatType = new AircraftSeatType();
-//                    seatType.setAircraft(aircraft);
-//                    seatType.setSeatType(e.getKey());
-//                    seatType.setTotalSeats(e.getValue());
-//                    return seatType;
-//                }).toList();
-//
-//        aircraftSeatTypeRepository.saveAll(seatTypes);
-//    }
-//
-//    private List<String> getSeatColumns(String pattern) {
-//        return switch (pattern) {
-//            case "1-1-1" -> List.of("A", "D", "G");
-//            case "2-2-2" -> List.of("A", "B", "D", "E", "G", "H");
-//            case "3-4-3" -> List.of("A", "B", "C", "D", "E", "F", "G", "H", "J", "K");
-//            case "1-2-1" -> List.of("A", "D", "G", "K");
-//            case "3-3" -> List.of("A", "B", "C", "D", "E", "F");
-//            case "3-3-3" -> List.of("A", "B", "C", "D", "E", "F", "G", "H", "K");
-//            default -> List.of("A", "B", "C", "D", "E", "F");
-//        };
-//    }
-//
-//    private interface Section {}
-//    private record SeatSection(String name, String pattern, int fromRow, int toRow) implements Section {}
-//    private record SpaceSection(String name, String label, int fromRow, int toRow) implements Section {}
-//}

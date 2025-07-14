@@ -7,11 +7,16 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class BaggageDto {
+
+    @NotNull(message = "Baggage Add Ons Id should not be null")
+    private String baggageAddOnsId;
 
     @NotNull(message = "Weight should not be null!")
     @Min(value = 1, message = "Weight should be bigger than 1")
@@ -20,4 +25,6 @@ public class BaggageDto {
 
     @NotNull(message = "Tag code should not be null")
     private String tagCode;
+
+    private Integer passengerIndex;
 }

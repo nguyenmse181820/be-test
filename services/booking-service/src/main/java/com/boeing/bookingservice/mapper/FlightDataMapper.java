@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Mappings;
-import org.mapstruct.Named;
 
 import java.util.Collections;
 import java.util.List;
@@ -52,20 +51,11 @@ public interface FlightDataMapper {
             @Mapping(source = "estimatedArrivalTime", target = "estimatedArrivalTime"),
             @Mapping(source = "actualArrivalTime", target = "actualArrivalTime"),
             @Mapping(source = "status", target = "status"),
-            @Mapping(source = "flightDuration", target = "duration"),
-            @Mapping(source = "seatAvailabilityMap", target = "seatMapWithStatus"),
-            @Mapping(source = "availableFares", target = "availableFares")
+            @Mapping(source = "flightDurationMinutes", target = "duration"),
+            @Mapping(source = "availableFares", target = "availableFares"),
+            @Mapping(target = "seatMapWithStatus", ignore = true)
     })
     FlightWithFareDetailsDTO toBpsFlightWithFareDetailsDTO(FsFlightWithFareDetailsDTO fisDto);
-
-    // --- Mapping DTO con FlightWithFareDetails ---
-    // FsAircraftDTO -> AircraftInfoDTO (BPS Response)
-    @Mapping(source = "type", target = "type")
-    AircraftInfoDTO toBpsAircraftDTO(FsAircraftDTO fisAircraft);
-
-    // FsAircraftTypeDTO -> AircraftTypeInfoDTO (BPS Response)
-    @Mapping(source = "seatMapLayout", target = "parsedSeatMap")
-    AircraftTypeInfoDTO toBpsAircraftTypeDTO(FsAircraftTypeDTO fisAircraftType);
 
     default List<SeatMapSeatDTO> mapSeatMapLayoutToList(String seatMapLayoutJson) {
         if (seatMapLayoutJson == null || seatMapLayoutJson.isBlank()) {
@@ -78,37 +68,26 @@ public interface FlightDataMapper {
         } catch (Exception e) {
             System.err.println("Error parsing seatMapLayout JSON: " + seatMapLayoutJson + " - " + e.getMessage());
             return Collections.emptyList();
-        }    }
-        
+        }
+    }
+
     // FsDetailedFareDTO -> DetailedFareInfoDTO (BPS Response)
     @Mappings({
-            @Mapping(source = "flightFareId", target = "flightFareId"),
+            @Mapping(source = "id", target = "flightFareId"),
             @Mapping(source = "name", target = "name"),
             @Mapping(source = "price", target = "price"),
-            @Mapping(source = "seatsAvailableForFare", target = "seatsAvailableForFare"),
-            @Mapping(source = "baggageAllowance", target = "baggageAllowance"),
-            @Mapping(source = "benefits", target = "benefits", qualifiedByName = "mapBenefitUuidsToInfoList")
+            @Mapping(source = "totalSeats", target = "seatsAvailableForFare"),
+            @Mapping(target = "baggageAllowance", constant = "Standard Baggage"),
+            @Mapping(source = "benefits", target = "benefits")
     })
     DetailedFareInfoDTO toBpsDetailedFareInfoDTO(FsDetailedFareDTO fisDetailedFare);
-    
+
     List<DetailedFareInfoDTO> toBpsDetailedFareInfoDTOList(List<FsDetailedFareDTO> fisDetailedFareList);
 
     // FsBenefitDTO -> BenefitInfoDTO (BPS Response)
-    @Mapping(source = "benefitId", target = "benefitId")
+    @Mapping(source = "id", target = "benefitId")
+    @Mapping(source = "iconURL", target = "iconUrl")
     BenefitInfoDTO toBpsBenefitInfoDTO(FsBenefitDTO fisBenefit);
 
     List<BenefitInfoDTO> toBpsBenefitInfoDTOList(List<FsBenefitDTO> fisBenefitList);
-    @Named("mapBenefitUuidsToInfoList")
-    default List<BenefitInfoDTO> mapBenefitUuidsToInfoList(List<UUID> benefitIds) {
-        if (benefitIds == null) {
-            return Collections.emptyList();
-        }
-        return benefitIds.stream()
-                .map(id -> BenefitInfoDTO.builder()
-                        .benefitId(id)
-                        .name("Benefit " + id) // Placeholder name since flight service only sends IDs
-                        .description("Benefit with ID: " + id)
-                        .build())
-                .collect(Collectors.toList());
-    }
 }

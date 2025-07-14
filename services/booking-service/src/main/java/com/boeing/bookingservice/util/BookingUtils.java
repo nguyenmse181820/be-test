@@ -306,6 +306,101 @@ public class BookingUtils {
     }
     
     /**
+     * Creates booking details for a flight segment using actual pricing from frontend
+     * @param booking The booking entity
+     * @param passengerEntities Map of passenger entities by index
+     * @param passengerInfos List of passenger info DTOs
+     * @param flightId The flight ID
+     * @param flightCode The flight code
+     * @param originAirportCode Origin airport code
+     * @param destinationAirportCode Destination airport code
+     * @param departureTime Departure time
+     * @param arrivalTime Arrival time
+     * @param selectedFareName Selected fare name
+     * @param seatSelections Map of passenger index to seat code
+     * @param actualPricingMap Map of passenger index to actual price from frontend
+     * @param bookingCode Booking reference code with optional segment suffix
+     * @return List of created booking details and the total actual amount
+     */
+    public static BookingDetailsResult createBookingDetailsForSegmentWithActualPricing(
+            Booking booking,
+            Map<Integer, Passenger> passengerEntities,
+            List<PassengerInfoDTO> passengerInfos,
+            UUID flightId,
+            String flightCode,
+            String originAirportCode,
+            String destinationAirportCode,
+            LocalDateTime departureTime,
+            LocalDateTime arrivalTime,
+            String selectedFareName,
+            Map<Integer, String> seatSelections,
+            Map<Integer, Double> actualPricingMap,
+            String bookingCode
+    ) {
+        List<BookingDetail> details = new ArrayList<>();
+        double actualTotalAmount = 0.0;
+        
+        for (int passengerIndex = 0; passengerIndex < passengerInfos.size(); passengerIndex++) {
+            PassengerInfoDTO passengerInfo = passengerInfos.get(passengerIndex);
+            Passenger passengerEntity = passengerEntities.get(passengerIndex);
+            
+            if (passengerEntity == null || passengerInfo == null) {
+                log.warn("Missing passenger entity or info at index {}, skipping", passengerIndex);
+                continue;
+            }
+            
+            // Get seat code for this passenger if any
+            String seatCode = seatSelections != null ? seatSelections.get(passengerIndex) : null;
+            
+            // Don't assign seats to infants
+            String ageCategory = getAgeCategory(passengerInfo.getDateOfBirth());
+            if ("baby".equals(ageCategory) && seatCode != null) {
+                log.warn("Baby passenger {} has seat assignment {}, removing seat assignment", 
+                        passengerInfo.getFirstName(), seatCode);
+                seatCode = null;
+            }
+            
+            // Use actual price from frontend if available, otherwise fallback to baby price for infants
+            double detailPrice = 0.0;
+            if (actualPricingMap != null && actualPricingMap.containsKey(passengerIndex)) {
+                detailPrice = actualPricingMap.get(passengerIndex);
+                log.debug("Using actual price {} for passenger {} from frontend", detailPrice, passengerIndex);
+            } else if ("baby".equals(ageCategory)) {
+                detailPrice = BABY_PRICE;
+                log.debug("Using baby price {} for infant passenger {}", detailPrice, passengerIndex);
+            } else {
+                log.warn("No pricing found for passenger {} and not an infant, using 0.0", passengerIndex);
+            }
+            
+            detailPrice = Math.round(detailPrice * 100.0) / 100.0;
+            actualTotalAmount += detailPrice;
+            
+            // Create booking detail
+            BookingDetail detail = createBookingDetail(
+                    booking,
+                    passengerEntity,
+                    flightId,
+                    flightCode,
+                    originAirportCode,
+                    destinationAirportCode,
+                    departureTime,
+                    arrivalTime,
+                    selectedFareName,
+                    seatCode,
+                    detailPrice,
+                    bookingCode
+            );
+            
+            details.add(detail);
+            
+            log.debug("Created booking detail for passenger {}: seat={}, price={}", 
+                    passengerIndex, seatCode, detailPrice);
+        }
+        
+        return new BookingDetailsResult(details, Math.round(actualTotalAmount * 100.0) / 100.0);
+    }
+    
+    /**
      * Simple result class to hold booking details and their total amount
      */
     public static class BookingDetailsResult {
@@ -346,5 +441,25 @@ public class BookingUtils {
         }
         
         return seatMap;
+    }
+    
+    /**
+     * Ensures the booking code follows the standard format with proper segment suffix
+     * 
+     * @param baseCode The base booking code (e.g., BKG-284EF2E4)
+     * @param segmentIndex The segment index (0-based)
+     * @return A properly formatted booking code (e.g., BKG-284EF2E4-1)
+     */
+    public static String formatBookingCode(String baseCode, int segmentIndex) {
+        if (baseCode == null || baseCode.trim().isEmpty()) {
+            log.warn("Empty or null booking code provided for formatting");
+            return "BKG-ERROR";
+        }
+        
+        // Clean up the base code by removing any existing suffix
+        String cleanBaseCode = baseCode.replaceAll("-\\d+$", "");
+        
+        // Add the segment suffix (1-based)
+        return cleanBaseCode + "-" + (segmentIndex + 1);
     }
 }

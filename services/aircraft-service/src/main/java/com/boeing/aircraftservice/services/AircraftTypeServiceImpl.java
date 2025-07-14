@@ -101,6 +101,11 @@ public class AircraftTypeServiceImpl implements AircraftTypeService {
     }
 
     @Override
+    public List<AircraftTypeResponseDTO> getAircraftsTypeActive() {
+        return aircraftTypeRepository.findByDeletedIsFalse().stream().filter(v -> !v.isDeleted()).map(aircraftTypeMapper::aircraftTypetoAircraftTypeResponseDTO).collect(Collectors.toList());
+    }
+
+    @Override
     public AircraftTypeResponseDTO findById(UUID aircraftTypeID) {
         AircraftType aircraft = aircraftTypeRepository.findAircraftTypeById(aircraftTypeID);
         if (aircraft == null) {

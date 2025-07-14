@@ -1,4 +1,5 @@
 services:
+
   postgres:
     container_name: boeing-postgres
     image: postgres
@@ -11,6 +12,13 @@ services:
       - ./db/init-db:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    networks:
+      - boeing-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U boeing" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   rabbitmq:
@@ -22,6 +30,19 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - boeing-network
+    healthcheck:
+      test: [ "CMD-SHELL", "rabbitmq-diagnostics -q ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
+
 volumes:
   postgres:
+    name: boeing-postgres
+
+networks:
+  boeing-network:
+    name: boeing-network-local

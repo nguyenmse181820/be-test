@@ -1,10 +1,11 @@
 package com.boeing.bookingservice.integration.fs.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -12,19 +13,14 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class FsDetailedFareDTO {
-    @JsonProperty("id")
-    private UUID flightFareId;
+    private UUID id;
     private String name;
     private Double price;
-    
-    @JsonProperty("remainingSeats")
-    private Integer seatsAvailableForFare;
-    
-    private String seatRange;
-    private Integer totalSeats;
-    private String baggageAllowance;
-    private FsFareRuleDTO fareRules;
-    private List<UUID> benefits;
-    private List<String> conditions;
+    private String fareType;
+    private List<String> seats;
+    private List<String> occupiedSeats;
+    private int totalSeats;
+    private List<FsBenefitDTO> benefits;
 }

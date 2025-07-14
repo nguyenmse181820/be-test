@@ -1,0 +1,289 @@
+services:
+
+  boeing-aircraft:
+    container_name: boeing-aircraft
+    build:
+      context: ./services/aircraft-service
+    ports:
+      - "8081:8081"
+    networks:
+      - boeing-network
+    depends_on:
+      boeing-config:
+        condition: service_healthy
+      boeing-discovery:
+        condition: service_healthy
+    environment:
+      CONFIG_URI: optional:configserver:http://boeing-config:8888
+      DB_HOSTNAME: boeing-postgres
+      DB_PORT: 5432
+      EUREKA_URI: http://boeing-discovery:8761/eureka/
+      EUREKA_HOSTNAME: boeing-aircraft
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:8081/air-craft/actuator/health | grep '\"status\":\"UP\"'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  boeing-booking:
+    container_name: boeing-booking
+    build:
+      context: ./services/booking-service
+    ports:
+      - "8082:8082"
+    networks:
+      - boeing-network
+    depends_on:
+      boeing-config:
+        condition: service_healthy
+      boeing-discovery:
+        condition: service_healthy
+    environment:
+      CONFIG_URI: optional:configserver:http://boeing-config:8888
+      DB_HOSTNAME: boeing-postgres
+      DB_PORT: 5432
+      RABBITMQ_HOST: boeing-rabbitmq
+      RABBITMQ_PORT: 5672
+      VNPAY_RETURN_URL: http://boeing-booking:8082/booking-service/api/v1/payment/vn-pay-callback
+      EUREKA_URI: http://boeing-discovery:8761/eureka/
+      FLIGHT_SERVICE_URI: http://boeing-flight:8084/flight-service
+      FLIGHT_SERVICE_URL: http://boeing-flight:8084
+      LOYALTY_SERVICE_URI: http://boeing-loyalty:8085/loyalty-service
+      FRONTEND_URI: http://localhost:5173
+      EUREKA_HOSTNAME: boeing-booking
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:8082/booking-service/actuator/health | grep '\"status\":\"UP\"'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  boeing-checkin:
+    container_name: boeing-checkin
+    build:
+      context: ./services/check-in-service
+    ports:
+      - "8083:8083"
+    networks:
+      - boeing-network
+    depends_on:
+      boeing-config:
+        condition: service_healthy
+      boeing-discovery:
+        condition: service_healthy
+    environment:
+      CONFIG_URI: optional:configserver:http://boeing-config:8888
+      DB_HOSTNAME: boeing-postgres
+      DB_PORT: 5432
+      EUREKA_URI: http://boeing-discovery:8761/eureka/
+      EUREKA_HOSTNAME: boeing-checkin
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:8083/check-in-service/actuator/health | grep '\"status\":\"UP\"'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  boeing-config:
+    container_name: boeing-config
+    build:
+      context: ./services/config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - boeing-network
+    environment:
+      EUREKA_URI: http://boeing-discovery:8761/eureka/
+      CONFIG_HOSTNAME: boeing-config
+      DB_HOSTNAME: boeing-postgres
+      DB_PORT: 5432
+    depends_on:
+      boeing-postgres:
+        condition: service_healthy
+      boeing-rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:8888/actuator/health | grep '\"status\":\"UP\"'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  boeing-discovery:
+    container_name: boeing-discovery
+    build:
+      context: ./services/discovery
+    ports:
+      - "8761:8761"
+    networks:
+      - boeing-network
+    environment:
+      EUREKA_HOSTNAME: boeing-discovery
+    depends_on:
+      boeing-postgres:
+        condition: service_healthy
+      boeing-rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:8761/actuator/health | grep '\"status\":\"UP\"'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  boeing-flight:
+    container_name: boeing-flight
+    build:
+      context: ./services/flight-service
+    ports:
+      - "8084:8084"
+    networks:
+      - boeing-network
+    depends_on:
+      boeing-config:
+        condition: service_healthy
+      boeing-discovery:
+        condition: service_healthy
+    environment:
+      CONFIG_URI: optional:configserver:http://boeing-config:8888
+      DB_HOSTNAME: boeing-postgres
+      DB_PORT: 5432
+      EUREKA_URI: http://boeing-discovery:8761/eureka/
+      AIRCRAFT_SERVICE_URL: http://boeing-aircraft:8081/air-craft/
+      AUTHENTICATION_SERVICE_URL: http://boeing-user:8086
+      EUREKA_HOSTNAME: boeing-flight
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:8084/flight-service/actuator/health | grep '\"status\":\"UP\"'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  boeing-gateway:
+    container_name: boeing-gateway
+    build:
+      context: ./services/gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - boeing-network
+    depends_on:
+      boeing-config:
+        condition: service_healthy
+      boeing-discovery:
+        condition: service_healthy
+      boeing-aircraft:
+        condition: service_healthy
+      boeing-booking:
+        condition: service_healthy
+      boeing-checkin:
+        condition: service_healthy
+      boeing-flight:
+        condition: service_healthy
+      boeing-loyalty:
+        condition: service_healthy
+      boeing-user:
+        condition: service_healthy
+    environment:
+      CONFIG_URI: optional:configserver:http://boeing-config:8888
+      DB_HOSTNAME: boeing-postgres
+      DB_PORT: 5432
+      EUREKA_URI: http://boeing-discovery:8761/eureka/
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:8080/actuator/health | grep '\"status\":\"UP\"'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  boeing-loyalty:
+    container_name: boeing-loyalty
+    build:
+      context: ./services/loyalty-service
+    ports:
+      - "8085:8085"
+    networks:
+      - boeing-network
+    depends_on:
+      boeing-config:
+        condition: service_healthy
+      boeing-discovery:
+        condition: service_healthy
+    environment:
+      CONFIG_URI: optional:configserver:http://boeing-config:8888
+      DB_HOSTNAME: boeing-postgres
+      DB_PORT: 5432
+      EUREKA_URI: http://boeing-discovery:8761/eureka/
+      AUTHENTICATION_SERVICE_URL: http://boeing-user:8086
+      EUREKA_HOSTNAME: boeing-loyalty
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:8085/loyalty-service/actuator/health | grep '\"status\":\"UP\"'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  boeing-user:
+    container_name: boeing-user
+    build:
+      context: ./services/user-service
+    ports:
+      - "8086:8086"
+    networks:
+      - boeing-network
+    depends_on:
+      boeing-config:
+        condition: service_healthy
+      boeing-discovery:
+        condition: service_healthy
+    environment:
+      CONFIG_URI: optional:configserver:http://boeing-config:8888
+      DB_HOSTNAME: boeing-postgres
+      DB_PORT: 5432
+      EUREKA_URI: http://boeing-discovery:8761/eureka/
+      EUREKA_HOSTNAME: boeing-user
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:8086/actuator/health | grep '\"status\":\"UP\"'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  boeing-postgres:
+    container_name: boeing-postgres
+    image: postgres
+    environment:
+      POSTGRES_USER: boeing
+      POSTGRES_PASSWORD: boeing
+      PGDATA: /data/postgres
+    volumes:
+      - boeing-postgres-data:/data/postgres
+      - ./db/init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - boeing-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U boeing" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  boeing-rabbitmq:
+    container_name: boeing-rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - boeing-network
+    healthcheck:
+      test: [ "CMD-SHELL", "rabbitmq-diagnostics -q ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  boeing-network:
+    name: boeing-network
+
+volumes:
+  boeing-postgres-data:
+    name: boeing-postgres-data

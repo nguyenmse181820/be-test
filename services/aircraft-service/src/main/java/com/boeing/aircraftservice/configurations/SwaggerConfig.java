@@ -28,10 +28,6 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI() {
 
-//        Server devServer = new Server();
-//        devServer.setUrl(swaggerDevUrl);
-//        devServer.setDescription("Server URL in Development environment");
-
         Contact contact = new Contact();
         contact.setEmail("hoangsonhadev@gmail.com");
         contact.setName("HoangSonHa");
@@ -50,7 +46,6 @@ public class SwaggerConfig {
 
         return new OpenAPI()
                 .info(info)
-//                .servers(List.of(devServer))
                 .addSecurityItem(securityRequirement)
                 .components(components);
     }

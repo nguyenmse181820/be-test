@@ -10,10 +10,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -37,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/payment/vn-pay-callback").permitAll()
                         .requestMatchers("/api/v1/bookings/{bookingReference}/payment/client-return").permitAll()
                         .requestMatchers("/api/v1/flights/{flightId}/details").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/api/v1/payment/**").authenticated()
                         .requestMatchers("/api/v1/bookings/**").authenticated()
                         .requestMatchers("/api/v1/passengers/**").authenticated()

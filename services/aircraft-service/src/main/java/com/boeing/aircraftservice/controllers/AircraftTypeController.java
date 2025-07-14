@@ -86,9 +86,18 @@ public class AircraftTypeController {
      * @return list or empty
      */
     @Operation(summary = "Get all aircraft-type non paging", description = "Retrieves all aircraft-type, without optional pagination")
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/non-paging")
+//    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/non-paging/active")
     public ResponseEntity<ObjectResponse> getAllAircraftTypesNonPaging() {
+        List<AircraftTypeResponseDTO> results = aircraftTypeService.getAircraftsTypeActive();
+        return !results.isEmpty() ? ResponseEntity.status(HttpStatus.OK).body(new ObjectResponse("Success", "get all AircraftTypes non paging successfully", results)) :
+                ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ObjectResponse("Failed", "get all AircraftTypes non paging failed", results));
+    }
+
+    @Operation(summary = "Get all aircraft-type non paging", description = "Retrieves all aircraft-type, without optional pagination")
+//    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/non-paging")
+    public ResponseEntity<ObjectResponse> getAllAircraftTypesNonPagingActive() {
         List<AircraftTypeResponseDTO> results = aircraftTypeService.getAircraftsType();
         return !results.isEmpty() ? ResponseEntity.status(HttpStatus.OK).body(new ObjectResponse("Success", "get all AircraftTypes non paging successfully", results)) :
                 ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ObjectResponse("Failed", "get all AircraftTypes non paging failed", results));
@@ -147,22 +156,6 @@ public class AircraftTypeController {
                 ResponseEntity.status(HttpStatus.OK).body(new ObjectResponse("Success", "Get AircraftType by ID successfully", aircraftType)) :
                 ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ObjectResponse("Fail", "Get AircraftType by ID failed", null));
     }
-
-//    /**
-//     * Method get AircraftType by AircraftType code
-//     *
-//     * @param searchAircraftTypeCodeRequest contain code of AircraftType
-//     * @return list or empty
-//     */
-//    @Operation(summary = "Get AircraftType by AircraftType code", description = "Retrieves AircraftType by AircraftType code")
-//    @PreAuthorize("hasRole('USER') or hasRole('STAFF') or hasRole('ADMIN')")
-//    @PostMapping("/code")
-//    public ResponseEntity<ObjectResponse> getAircraftTypeByCode(@RequestBody SearchAircraftTypeCodeRequest searchAircraftTypeCodeRequest) {
-//        AircraftTypeResponseDTO aircraftType = aircraftTypeService.findByCode(searchAircraftTypeCodeRequest);
-//        return aircraftType != null ?
-//                ResponseEntity.status(HttpStatus.OK).body(new ObjectResponse("Success", "Get AircraftType by ID successfully", aircraftType)) :
-//                ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ObjectResponse("Fail", "Get AircraftType by ID failed", null));
-//    }
 
     /**
      * Method create AircraftType

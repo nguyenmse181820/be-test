@@ -1,0 +1,56 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /air-craft
+  address: 0.0.0.0
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOSTNAME:localhost}:${DB_PORT:5432}/aircraft_db
+    username: postgres
+    password: 12345
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        show_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: false
+    hostname: ${EUREKA_HOSTNAME:localhost}
+
+jwt:
+  secret: 753474857438754387594385743975348574893759843753498776576576575765634545435365346534645645364565465347657547465
+  refresh:
+    secret: 123454857438754387594385743975348574893759843753498776576576575765634545435365346534645645364565465347657554321
+  algorithms: HmacSHA256
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh
+  endpoint:
+    health:
+      show-details: always
+
+swagger:
+  app:
+    name: AirCraftService
+  add:
+    security:
+      name: AirCraftServiceSecurity
+  scheme: Bearer
+  format: JWT
+  dev:
+    url: http://localhost:8081/
+
+application:
+  default-current-page: 1
+  default-page-size: 5

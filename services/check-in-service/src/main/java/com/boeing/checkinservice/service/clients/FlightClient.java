@@ -7,10 +7,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.UUID;
 
-@FeignClient(name = "flight-service", url = "${services.flight-service.url:http://localhost:8084}")
+@FeignClient(name = "flight-service", url = "http://localhost:8084")
 public interface FlightClient {
 
-    @GetMapping("/flight-service/api/v1/fs/flights/{flightId}/details")
+    @GetMapping("/api/v1/fs/flights/{flightId}/details")
     FsFlightWithFareDetailsDTO getFlightDetails(@PathVariable("flightId") UUID flightId);
 
 }

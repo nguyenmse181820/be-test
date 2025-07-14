@@ -15,4 +15,5 @@ public class BookingFullDetailResponseDTO {
     private BookingInfoDTO bookingInfo;
     private List<BookingDetailInfoDTO> details;
     private List<PaymentInfoForBookingDetailDTO> payments;
+    private List<BaggageAddonResponseDTO> baggageAddons;
 }

@@ -2,6 +2,8 @@ package com.boeing.bookingservice.service;
 
 import com.boeing.bookingservice.model.entity.Booking;
 import com.boeing.bookingservice.model.entity.RefundRequest;
+import com.boeing.bookingservice.model.enums.BookingStatus;
+import com.boeing.bookingservice.model.enums.BookingDetailStatus;
 import com.boeing.bookingservice.repository.BookingRepository;
 import com.boeing.bookingservice.repository.RefundRequestRepository;
 import com.boeing.bookingservice.exception.ResourceNotFoundException;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -69,13 +72,26 @@ public class RefundRequestService {
             
             Booking booking = bookingOpt.get();
             
-            // Check if refund request already exists
-            Optional<RefundRequest> existingRequest = refundRequestRepository
-                    .findByBookingIdAndStatus(booking.getId(), "PENDING");
+            // Check if refund request already exists for this booking
+            List<RefundRequest> existingRequests = refundRequestRepository.findByBookingId(booking.getId());
             
-            if (existingRequest.isPresent()) {
-                log.warn("[REFUND_REQUEST] Refund request already exists for booking: {}", bookingReference);
-                return existingRequest.get().getRefundRequestId();
+            // Check for any non-rejected requests (PENDING, APPROVED, COMPLETED)
+            Optional<RefundRequest> activeRequest = existingRequests.stream()
+                    .filter(request -> !"REJECTED".equals(request.getStatus()))
+                    .findFirst();
+            
+            if (activeRequest.isPresent()) {
+                String existingStatus = activeRequest.get().getStatus();
+                log.warn("[REFUND_REQUEST] Active refund request already exists for booking: {} with status: {}", 
+                        bookingReference, existingStatus);
+                
+                if ("PENDING".equals(existingStatus)) {
+                    throw new IllegalArgumentException("A refund request is already pending for this booking. Please wait for it to be processed.");
+                } else if ("APPROVED".equals(existingStatus)) {
+                    throw new IllegalArgumentException("A refund request has already been approved for this booking.");
+                } else if ("COMPLETED".equals(existingStatus)) {
+                    throw new IllegalArgumentException("A refund has already been completed for this booking.");
+                }
             }
               // Create new refund request
             RefundRequest refundRequest = RefundRequest.builder()
@@ -121,11 +137,62 @@ public class RefundRequestService {
             
             refundRequestRepository.save(refundRequest);
             
+            // CRITICAL FIX: Update booking status when refund is completed
+            if ("COMPLETED".equals(status)) {
+                updateBookingStatusAfterRefundCompletion(refundRequest.getBookingReference());
+            }
+            
             log.info("[REFUND_REQUEST] Updated refund request: {} to status: {}", refundRequestId, status);
             
         } catch (Exception e) {
             log.error("[REFUND_REQUEST] Error updating refund request: {}", refundRequestId, e);
             throw new RuntimeException("Failed to update refund request", e);
+        }
+    }
+    
+    /**
+     * Updates booking status to CANCELLED when refund is completed
+     * Only updates bookings that were previously PAID (actual refunds)
+     */
+    private void updateBookingStatusAfterRefundCompletion(String bookingReference) {
+        try {
+            log.info("[REFUND_COMPLETION] Updating booking status for completed refund: {}", bookingReference);
+            
+            Optional<Booking> bookingOpt = bookingRepository.findByBookingReference(bookingReference);
+            if (bookingOpt.isEmpty()) {
+                log.error("[REFUND_COMPLETION] Booking not found: {}", bookingReference);
+                return;
+            }
+            
+            Booking booking = bookingOpt.get();
+            
+            // CRITICAL FIX: Only update status if booking was previously PAID
+            // Don't change CANCELLED_NO_PAYMENT bookings (no payment = no refund)
+            if (booking.getStatus() == BookingStatus.PAID) {
+                log.info("[REFUND_COMPLETION] Updating PAID booking {} to CANCELLED after refund completion", bookingReference);
+                
+                // Update booking status to CANCELLED since refund is completed
+                booking.setStatus(BookingStatus.CANCELLED);
+                booking.setUpdatedAt(LocalDateTime.now());
+                
+                // Update all booking details to CANCELLED status
+                if (booking.getBookingDetails() != null) {
+                    booking.getBookingDetails().forEach(detail -> {
+                        detail.setStatus(BookingDetailStatus.CANCELLED);
+                    });
+                }
+                
+                bookingRepository.save(booking);
+                
+                log.info("[REFUND_COMPLETION] Booking {} status updated from PAID to CANCELLED after refund completion", bookingReference);
+            } else {
+                log.warn("[REFUND_COMPLETION] Booking {} has status {} - not updating to CANCELLED as it was not PAID", 
+                        bookingReference, booking.getStatus());
+            }
+            
+        } catch (Exception e) {
+            log.error("[REFUND_COMPLETION] Error updating booking status after refund completion for booking: {}", bookingReference, e);
+            // Don't throw - refund completion shouldn't fail due to status update issues
         }
     }
     

@@ -15,6 +15,8 @@ public interface AircraftTypeService {
 
     List<AircraftTypeResponseDTO> getAircraftsType();
 
+    List<AircraftTypeResponseDTO> getAircraftsTypeActive();
+
     AircraftTypeResponseDTO findById(UUID aircraftTypeID);
 
 //    AircraftTypeResponseDTO findByModel(SearchAircraftCodeRequest model);

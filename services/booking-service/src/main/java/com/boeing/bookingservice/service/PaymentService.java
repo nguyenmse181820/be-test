@@ -13,4 +13,9 @@ public interface PaymentService {
     Payment createPayment(CreatePaymentRequest request, UUID userId);
 
     PaymentStatusDTO getPaymentStatus(String bookingReference, UUID userId);
+    
+    /**
+     * Complete a manual payment (e.g., bank transfer)
+     */
+    Payment completeManualPayment(String bookingReference, String transactionReference);
 }

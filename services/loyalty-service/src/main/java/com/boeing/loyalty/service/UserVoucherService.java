@@ -1,16 +1,8 @@
 package com.boeing.loyalty.service;
 
-import com.boeing.loyalty.dto.voucher.UserVoucherListResponseDTO;
-import com.boeing.loyalty.dto.voucher.UserVoucherResponseDTO;
-import com.boeing.loyalty.dto.voucher.VoucherTemplateResponseDTO;
-import com.boeing.loyalty.entity.UserVoucher;
-import com.boeing.loyalty.entity.VoucherTemplate;
-import com.boeing.loyalty.entity.enums.VoucherStatus;
-import com.boeing.loyalty.exception.BadRequestException;
-import com.boeing.loyalty.repository.MembershipRepository;
-import com.boeing.loyalty.repository.UserVoucherRepository;
-import com.boeing.loyalty.repository.VoucherTemplateRepository;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,9 +10,21 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.UUID;
+import com.boeing.loyalty.dto.voucher.UserVoucherListResponseDTO;
+import com.boeing.loyalty.dto.voucher.UserVoucherResponseDTO;
+import com.boeing.loyalty.entity.LoyaltyPointTransaction;
+import com.boeing.loyalty.entity.Membership;
+import com.boeing.loyalty.entity.UserVoucher;
+import com.boeing.loyalty.entity.VoucherTemplate;
+import com.boeing.loyalty.entity.enums.PointType;
+import com.boeing.loyalty.entity.enums.VoucherStatus;
+import com.boeing.loyalty.exception.BadRequestException;
+import com.boeing.loyalty.repository.LoyaltyPointTransactionRepository;
+import com.boeing.loyalty.repository.MembershipRepository;
+import com.boeing.loyalty.repository.UserVoucherRepository;
+import com.boeing.loyalty.repository.VoucherTemplateRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,7 @@ public class UserVoucherService {
     private final VoucherTemplateRepository voucherTemplateRepository;
     private final VoucherTemplateService voucherTemplateService;
     private final MembershipRepository membershipRepository;
+    private final LoyaltyPointTransactionRepository loyaltyPointTransactionRepository;
 
     @Transactional(readOnly = true)
     public UserVoucherResponseDTO getUserVoucher(UUID id) {
@@ -39,6 +44,17 @@ public class UserVoucherService {
 
     @Transactional(readOnly = true)
     public UserVoucherListResponseDTO getUserVouchers(UUID userId, int page, int size) {
+        // FIX 8: Added input validation
+        if (userId == null) {
+            throw new BadRequestException("User ID cannot be null");
+        }
+        if (page < 0) {
+            throw new BadRequestException("Page number cannot be negative");
+        }
+        if (size <= 0 || size > 100) {
+            throw new BadRequestException("Page size must be between 1 and 100");
+        }
+        
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<UserVoucher> userVouchers = userVoucherRepository.findByMembership_UserId(userId, pageable);
 
@@ -62,12 +78,34 @@ public class UserVoucherService {
             throw new BadRequestException("Voucher template is not active");
         }
 
-        // TODO: Check if user has enough points
-        // TODO: Deduct points from user's balance
+        // Get user's membership
+        Membership membership = membershipRepository.findByUserId(userId)
+                .orElseThrow(() -> new BadRequestException("Membership not found for user ID: " + userId));
+
+        // Check if user has enough points
+        int pointsRequired = template.getPointsRequired();
+        if (membership.getPoints() < pointsRequired) {
+            throw new BadRequestException(String.format("Insufficient points. Required: %d, Available: %d", 
+                pointsRequired, membership.getPoints()));
+        }
+
+        // Deduct points from user's balance
+        membership.setPoints(membership.getPoints() - pointsRequired);
+        membershipRepository.save(membership);
+
+        // Create a transaction record for the point deduction
+        LoyaltyPointTransaction transaction = LoyaltyPointTransaction.builder()
+                .type(PointType.REDEEM)
+                .source("VOUCHER_REDEMPTION")
+                .points(pointsRequired)
+                .note("Redeemed voucher: " + template.getName())
+                .membership(membership)
+                .createdAt(LocalDateTime.now())
+                .build();
+        loyaltyPointTransactionRepository.save(transaction);
 
         UserVoucher userVoucher = UserVoucher.builder()
-                .membership(membershipRepository.findByUserId(userId)
-                        .orElseThrow(() -> new BadRequestException("Membership not found for user ID: " + userId)))
+                .membership(membership)
                 .voucher(template)
                 .code(generateVoucherCode())
                 .discountAmount(calculateDiscountAmount(template))
@@ -114,12 +152,49 @@ public class UserVoucherService {
     }
 
     private String generateVoucherCode() {
-        // TODO: Implement proper voucher code generation
-        return UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        // FIX 8: Implemented proper voucher code generation with uniqueness check
+        // The previous TODO implementation could generate duplicate codes
+        String code;
+        int attempts = 0;
+        int maxAttempts = 10;
+        
+        do {
+            code = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            attempts++;
+            
+            // FIX 8: Added safety check to prevent infinite loops
+            if (attempts >= maxAttempts) {
+                throw new IllegalStateException("Failed to generate unique voucher code after " + maxAttempts + " attempts");
+            }
+        } while (userVoucherRepository.findByCode(code).isPresent());
+        
+        return code;
     }
 
     private Double calculateDiscountAmount(VoucherTemplate template) {
-        // TODO: Implement proper discount calculation based on business rules
+        // This method calculates the maximum possible discount for the voucher
+        // The actual discount will be calculated during booking based on purchase amount
+        // For now, we store the maximum discount amount as the voucher's value
         return template.getMaxDiscount();
+    }
+    
+    /**
+     * Calculates the actual discount amount based on purchase amount and voucher template
+     */
+    public Double calculateActualDiscount(VoucherTemplate template, Double purchaseAmount) {
+        if (purchaseAmount == null || purchaseAmount <= 0) {
+            return 0.0;
+        }
+        
+        // Check minimum spend requirement
+        if (purchaseAmount < template.getMinSpend()) {
+            return 0.0;
+        }
+        
+        // Calculate percentage-based discount
+        Double percentageDiscount = (purchaseAmount * template.getDiscountPercentage()) / 100.0;
+        
+        // Apply maximum discount cap
+        return Math.min(percentageDiscount, template.getMaxDiscount());
     }
 } 

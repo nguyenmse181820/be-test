@@ -132,6 +132,89 @@ public class RabbitMQConfig {
         return new Queue(internalCreateMultiSegmentPendingBookingCmdQueueName, true);
     }
 
+    // Voucher related queues
+    @Bean
+    public Queue voucherValidateQueue() {
+        return new Queue("voucher.validate.queue", true);
+    }
+
+    @Bean
+    public Queue voucherValidatedQueue() {
+        return new Queue("voucher.validated.queue", true);
+    }
+
+    @Bean
+    public Queue voucherUseQueue() {
+        return new Queue("voucher.use.queue", true);
+    }
+
+    @Bean
+    public Queue voucherUsedQueue() {
+        return new Queue("voucher.used.queue", true);
+    }
+
+    @Bean
+    public Queue voucherCancelQueue() {
+        return new Queue("voucher.cancel.queue", true);
+    }
+
+    // Voucher related exchanges
+    @Bean
+    public TopicExchange voucherValidateExchange() {
+        return new TopicExchange("voucher.validate.exchange", true, false);
+    }
+
+    @Bean
+    public TopicExchange voucherValidatedExchange() {
+        return new TopicExchange("voucher.validated.exchange", true, false);
+    }
+
+    @Bean
+    public TopicExchange voucherUseExchange() {
+        return new TopicExchange("voucher.use.exchange", true, false);
+    }
+
+    @Bean
+    public TopicExchange voucherUsedExchange() {
+        return new TopicExchange("voucher.used.exchange", true, false);
+    }
+
+    @Bean
+    public TopicExchange voucherCancelExchange() {
+        return new TopicExchange("voucher.cancel.exchange", true, false);
+    }
+
+    @Bean
+    public TopicExchange voucherUsageCancelledExchange() {
+        return new TopicExchange("voucher.usage.cancelled.exchange", true, false);
+    }
+
+    // Voucher related bindings
+    @Bean
+    public Binding voucherValidateBinding(Queue voucherValidateQueue, TopicExchange voucherValidateExchange) {
+        return BindingBuilder.bind(voucherValidateQueue).to(voucherValidateExchange).with("#");
+    }
+
+    @Bean
+    public Binding voucherValidatedBinding(Queue voucherValidatedQueue, TopicExchange voucherValidatedExchange) {
+        return BindingBuilder.bind(voucherValidatedQueue).to(voucherValidatedExchange).with("#");
+    }
+
+    @Bean
+    public Binding voucherUseBinding(Queue voucherUseQueue, TopicExchange voucherUseExchange) {
+        return BindingBuilder.bind(voucherUseQueue).to(voucherUseExchange).with("#");
+    }
+
+    @Bean
+    public Binding voucherUsedBinding(Queue voucherUsedQueue, TopicExchange voucherUsedExchange) {
+        return BindingBuilder.bind(voucherUsedQueue).to(voucherUsedExchange).with("#");
+    }
+
+    @Bean
+    public Binding voucherCancelBinding(Queue voucherCancelQueue, TopicExchange voucherCancelExchange) {
+        return BindingBuilder.bind(voucherCancelQueue).to(voucherCancelExchange).with("#");
+    }
+
     @Bean
     public Binding internalFareCheckedBinding(Queue internalFareCheckedQueue, TopicExchange eventsExchange) {
         return BindingBuilder.bind(internalFareCheckedQueue).to(eventsExchange).with(RK_INTERNAL_FARE_CHECKED_EVENT);

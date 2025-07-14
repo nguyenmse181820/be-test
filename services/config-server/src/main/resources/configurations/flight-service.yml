@@ -10,18 +10,40 @@ spring:
       ddl-auto: update
   application:
     name: flight-service
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
 business:
   default-carry-on-weight: 7
   default-checked-baggage-weight: 30
+  minimum-hours-between-flights-of-aircraft: 3
+
 server:
   servlet:
     context-path: /flight-service
   port: 8084
+  address: 0.0.0.0
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
   api-docs:
     path: /api-docs
   default-produces-media-type: application/json
+
 external:
   aircraftURL: ${AIRCRAFT_SERVICE_URL:http://localhost:8081/air-craft/}
+  authentication:
+    url: ${AUTHENTICATION_SERVICE_URL:http://localhost:8086}
+    endpoint: /api/v1/identity/validate-token
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    hostname: ${EUREKA_HOSTNAME:localhost}
+    prefer-ip-address: false

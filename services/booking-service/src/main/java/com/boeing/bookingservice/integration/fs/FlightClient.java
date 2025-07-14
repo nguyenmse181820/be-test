@@ -1,13 +1,28 @@
 package com.boeing.bookingservice.integration.fs;
 
-import com.boeing.bookingservice.integration.fs.dto.*;
-import com.boeing.bookingservice.integration.fs.dto.FsConfirmSeatsRequestDTO;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.boeing.bookingservice.integration.fs.dto.FsConfirmFareSaleRequestDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsConfirmFareSaleResponseDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsConfirmSeatsRequestDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsConfirmSeatsResponseDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsFareAvailabilityResponseDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsFlightOptionDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsFlightWithFareDetailsDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsReleaseFareRequestDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsReleaseFareResponseDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsReleaseSeatsRequestDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsReleaseSeatsResponseDTO;
+import com.boeing.bookingservice.integration.fs.dto.FsSeatsAvailabilityResponseDTO;
 
 @FeignClient(name = "flight-service", url = "${services.flight-service.url}")
 public interface FlightClient {

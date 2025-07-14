@@ -1,5 +1,6 @@
 server:
   port: 8086
+  address: 0.0.0.0
 
 spring:
   datasource:
@@ -47,4 +48,7 @@ springdoc:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: false
+    hostname: ${EUREKA_HOSTNAME:localhost}

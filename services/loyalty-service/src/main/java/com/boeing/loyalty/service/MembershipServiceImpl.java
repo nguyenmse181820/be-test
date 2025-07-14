@@ -1,5 +1,11 @@
 package com.boeing.loyalty.service;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.boeing.loyalty.dto.membership.CreateMembershipRequestDTO;
 import com.boeing.loyalty.dto.membership.MembershipResponseDTO;
 import com.boeing.loyalty.dto.membership.PointTransactionResponseDTO;
@@ -8,15 +14,10 @@ import com.boeing.loyalty.entity.LoyaltyPointTransaction;
 import com.boeing.loyalty.entity.Membership;
 import com.boeing.loyalty.entity.enums.MembershipTier;
 import com.boeing.loyalty.exception.BadRequestException;
-import com.boeing.loyalty.exception.BadRequestException;
 import com.boeing.loyalty.repository.LoyaltyPointTransactionRepository;
 import com.boeing.loyalty.repository.MembershipRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class MembershipServiceImpl implements MembershipService {
     @Override
     @Transactional
     public MembershipResponseDTO createMembership(CreateMembershipRequestDTO request) {
-        if (membershipRepository.findByUserId(request.getUserId()) != null) {
+        if (membershipRepository.findByUserId(request.getUserId()).isPresent()) {
             throw new BadRequestException("Membership already exists for user ID: " + request.getUserId());
         }
 
@@ -59,8 +60,28 @@ public class MembershipServiceImpl implements MembershipService {
 
     @Override
     public List<MembershipResponseDTO> getAllMemberships() {
-        return membershipRepository.findAll().stream()
-                .map(this::mapToResponseDTO)
+        // FIX 9: Fixed N+1 query problem by fetching transactions with memberships in single query
+        // The original code would execute 1 query for memberships + N queries for transactions (one per membership)
+        // Now we only need to execute 2 queries total regardless of membership count
+        List<Membership> memberships = membershipRepository.findAll();
+        
+        if (memberships.isEmpty()) {
+            return List.of();
+        }
+        
+        // Fetch all transactions for all memberships in one query
+        List<UUID> membershipIds = memberships.stream().map(Membership::getId).toList();
+        List<LoyaltyPointTransaction> allTransactions = loyaltyPointTransactionRepository.findByMembershipIdIn(membershipIds);
+        
+        // Group transactions by membership ID for efficient lookup
+        var transactionsByMembership = allTransactions.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                    transaction -> transaction.getMembership().getId()
+                ));
+        
+        return memberships.stream()
+                .map(membership -> mapToResponseDTOWithTransactions(membership, 
+                    transactionsByMembership.getOrDefault(membership.getId(), List.of())))
                 .toList();
     }
 
@@ -122,7 +143,27 @@ public class MembershipServiceImpl implements MembershipService {
                 .points(membership.getPoints())
                 .totalEarnedPoints(membership.getTotalEarnedPoints())
                 .totalSpent(membership.getTotalSpent())
+                .createdAt(membership.getCreatedAt())
                 .transactions(transactions)
+                .build();
+    }
+    
+    // FIX 9: Added separate mapping method that accepts pre-fetched transactions
+    // This eliminates the need for individual database queries per membership
+    private MembershipResponseDTO mapToResponseDTOWithTransactions(Membership membership, List<LoyaltyPointTransaction> transactions) {
+        List<PointTransactionResponseDTO> transactionDTOs = transactions.stream()
+                .map(this::mapToTransactionDTO)
+                .toList();
+
+        return MembershipResponseDTO.builder()
+                .id(membership.getId())
+                .userId(membership.getUserId())
+                .tier(membership.getTier())
+                .points(membership.getPoints())
+                .totalEarnedPoints(membership.getTotalEarnedPoints())
+                .totalSpent(membership.getTotalSpent())
+                .createdAt(membership.getCreatedAt())
+                .transactions(transactionDTOs)
                 .build();
     }
 

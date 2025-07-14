@@ -70,6 +70,9 @@ public class VoucherTemplate {
     @Column(name = "usage_limit", nullable = false)
     private Integer usageLimit;
 
+    @Column(name = "points_required", nullable = false)
+    private Integer pointsRequired;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VoucherStatus status;
@@ -82,7 +85,10 @@ public class VoucherTemplate {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "voucher", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "voucher", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
+    // FIX 5: Changed from EAGER to LAZY fetch to prevent performance issues and circular references
+    // EAGER fetch can cause N+1 queries and memory issues when loading voucher templates
+    // LAZY fetch only loads user vouchers when explicitly accessed
     List<UserVoucher> userVouchers = new ArrayList<>();
 }

@@ -38,12 +38,12 @@ public class RescheduleFlightHistory extends BaseEntity {
     private String newSeatCode;
 
     @Column(name = "old_price", nullable = false)
-    private Double oldPrice;
+    private Double oldPrice; // Giá vé cũ đã bao gồm VAT 10%
 
     @Column(name = "new_price", nullable = false)
-    private Double newPrice;
+    private Double newPrice; // Giá vé mới đã bao gồm VAT 10%
 
     @Column(name = "price_difference", nullable = false)
-    private Double priceDifference;
+    private Double priceDifference; // Chênh lệch giá đã bao gồm VAT
 
 }

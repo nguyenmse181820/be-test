@@ -4,6 +4,7 @@ import com.boeing.user.dto.request.*;
 import com.boeing.user.dto.response.LoginResponse;
 import com.boeing.user.dto.response.TokenResponse;
 import com.boeing.user.dto.response.UserDTO;
+import com.boeing.user.dto.security.Token;
 import com.boeing.user.entity.User;
 import com.boeing.user.exception.BusinessLogicException;
 import com.boeing.user.exception.DuplicateResourceException;
@@ -12,13 +13,10 @@ import com.boeing.user.exception.ResourceNotFoundException;
 import com.boeing.user.mapper.UserMapper;
 import com.boeing.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
-import org.springframework.security.authentication.LockedException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.*;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +27,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class IdentityServiceImpl implements IdentityService {
 
     private static final Logger logger = LoggerFactory.getLogger(IdentityServiceImpl.class);
@@ -40,6 +39,32 @@ public class IdentityServiceImpl implements IdentityService {
     private final AuthenticationManager authenticationManager;
 
     private final Map<String, String> otpStorage = new HashMap<>();
+
+    @Override
+    public Token.ValidationResponse validateToken(Token.ValidationRequest request) {
+        try {
+            String email = jwtService.extractClaim(request.token(), claims -> claims.get("email", String.class));
+            User user = userRepository.findByEmail(email)
+                    .orElse(null);
+
+            if (user != null && jwtService.isTokenValid(request.token(), user)) {
+                return Token.ValidationResponse.builder()
+                        .valid(true)
+                        .email(user.getEmail())
+                        .role(user.getRole())
+                        .build();
+            }
+
+            return Token.ValidationResponse.builder()
+                    .valid(false)
+                    .build();
+        } catch (Exception e) {
+            log.error("Token validation failed", e);
+            return Token.ValidationResponse.builder()
+                    .valid(false)
+                    .build();
+        }
+    }
 
     @Override
     public UserDTO registerUser(RegisterRequest request) {

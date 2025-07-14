@@ -116,23 +116,6 @@ public class AircraftController {
                 ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ObjectResponse("Fail", "Get aircraft by ID failed", null));
     }
 
-
-//    /**
-//     * Method get aircraft by aircraft code
-//     *
-//     * @param searchAircraftCodeRequest contain code of aircraft
-//     * @return list or empty
-//     */
-//    @Operation(summary = "Get aircraft by aircraft code", description = "Retrieves aircraft by aircraft code")
-//    @PreAuthorize("hasRole('USER') or hasRole('STAFF') or hasRole('ADMIN')")
-//    @PostMapping("/code")
-//    public ResponseEntity<ObjectResponse> getAircraftByCode(@RequestBody SearchAircraftCodeRequest searchAircraftCodeRequest) {
-//        AircraftResponseDTO aircraft = aircraftService.findByCode(searchAircraftCodeRequest);
-//        return aircraft != null ?
-//                ResponseEntity.status(HttpStatus.OK).body(new ObjectResponse("Success", "Get aircraft by ID successfully", aircraft)) :
-//                ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ObjectResponse("Fail", "Get aircraft by ID failed", null));
-//    }
-
     /**
      * Method create aircraft
      *

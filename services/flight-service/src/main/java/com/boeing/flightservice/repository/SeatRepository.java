@@ -13,4 +13,5 @@ import java.util.UUID;
 public interface SeatRepository extends JpaRepository<Seat, UUID>, JpaSpecificationExecutor<Seat> {
     Optional<Seat> findBySeatCodeAndFlightIdAndDeleted(String seatCode, UUID flightId, Boolean deleted);
     List<Seat> findByFlightIdAndDeleted(UUID flightId, Boolean deleted);
+    List<Seat> findByFlightId(UUID flightId); // Find all seats regardless of deleted status
 }

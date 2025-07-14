@@ -23,6 +23,7 @@ public class BookingDetailInfoDTO {
     private LocalDateTime arrivalTime;
     private PassengerSummaryDTO passenger;
     private String selectedFareName;
+    private String seatCode;
     private Double price;
     private BookingDetailStatus status;
     private String bookingCode;

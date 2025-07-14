@@ -1,5 +1,6 @@
 package com.boeing.bookingservice.saga.command;
 
+import com.boeing.bookingservice.dto.request.BaggageAddonRequestDTO;
 import com.boeing.bookingservice.dto.request.PassengerInfoDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,4 +31,10 @@ public class CreatePendingMultiSegmentBookingInternalCommand {
     private List<Map<String, Object>> flightDetails; // Contains all flight details for each segment
     private String paymentMethod;
     private String clientIpAddress;
+    
+    // Detailed seat pricing information from frontend
+    private List<List<Map<String, Object>>> seatPricingByFlight;
+    
+    // Baggage add-ons
+    private List<BaggageAddonRequestDTO> baggageAddons;
 }

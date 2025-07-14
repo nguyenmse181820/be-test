@@ -56,7 +56,8 @@ public class PendingBookingCreationHandler {
         SagaState sagaState = loadSagaState(sagaId);
         CreateBookingSagaOrchestrator.CreateBookingSagaPayload payload = deserializePayload(sagaState.getPayloadJson());
 
-        try {            Booking createdBooking = bookingService.createPendingBookingInDatabase(
+        try {            
+                Booking createdBooking = bookingService.createPendingBookingInDatabase(
                     sagaId,
                     command.getBookingReference(),
                     command.getFlightId(),
@@ -74,16 +75,26 @@ public class PendingBookingCreationHandler {
                     command.getSnapshotDepartureTime(),
                     command.getSnapshotArrivalTime(),
                     command.getPaymentMethod(),
-                    command.getClientIpAddress());
+                    command.getClientIpAddress(),
+                    command.getBaggageAddons());
             log.info("[SAGA_CMD_HANDLER][{}] Pending booking entities created in DB. Booking DB ID: {}", sagaId,
                     createdBooking.getId());
 
             CreatePaymentRequest paymentCreationRequest = new CreatePaymentRequest();
             paymentCreationRequest.setBookingReference(createdBooking.getBookingReference());
             paymentCreationRequest.setAmount(createdBooking.getTotalAmount());
-            paymentCreationRequest.setOrderDescription("Thanh toan don hang " + createdBooking.getBookingReference());            String vnpayPaymentUrl;
+            paymentCreationRequest.setOrderDescription("Thanh toan don hang " + createdBooking.getBookingReference());
+            paymentCreationRequest.setPaymentMethod(command.getPaymentMethod());
+            paymentCreationRequest.setClientIpAddress(command.getClientIpAddress());
+            
+            log.info("[SAGA_CMD_HANDLER][{}] Creating payment request - BookingRef: {}, Amount: {}, PaymentMethod: {}", 
+                    sagaId, createdBooking.getBookingReference(), createdBooking.getTotalAmount(), command.getPaymentMethod());
+            
+            String vnpayPaymentUrl;
             try {
+                log.info("[SAGA_CMD_HANDLER][{}] Calling PaymentService.createVNPayPaymentUrl with userId: {}", sagaId, command.getUserId());
                 vnpayPaymentUrl = paymentService.createVNPayPaymentUrl(paymentCreationRequest, command.getUserId());
+                log.info("[SAGA_CMD_HANDLER][{}] PaymentService.createVNPayPaymentUrl returned: {}", sagaId, vnpayPaymentUrl);
             } catch (Exception e) {
                 log.error("[SAGA_CMD_HANDLER][{}] Error calling PaymentService to create VNPAY URL: {}", sagaId,
                         e.getMessage(), e);

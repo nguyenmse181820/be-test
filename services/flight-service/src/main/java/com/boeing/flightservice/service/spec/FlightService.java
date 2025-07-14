@@ -23,6 +23,10 @@ public interface FlightService {
 
     FlightResponseDTO createFlight(FsFlightCreateRequest request);
 
+    FlightResponseDTO updateFlight(UUID flightId, FsFlightCreateRequest request);
+
+    FlightResponseDTO getFlightById(UUID flightId);
+
     Map<FareType, List<String>> getAircraftSeatSections(UUID aircraftId);
 
     @Deprecated

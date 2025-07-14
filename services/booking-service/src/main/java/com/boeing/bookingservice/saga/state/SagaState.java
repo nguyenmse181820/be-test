@@ -27,7 +27,7 @@ public class SagaState {
     @Column(name = "current_step", nullable = false)
     private SagaStep currentStep;
 
-    @Lob
+    // Changed from @Lob to avoid PostgreSQL LOB stream error
     @Column(name = "payload_json", columnDefinition = "TEXT")
     private String payloadJson;
 
