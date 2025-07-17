@@ -49,7 +49,7 @@ services:
       FLIGHT_SERVICE_URI: http://boeing-flight:8084/flight-service
       FLIGHT_SERVICE_URL: http://boeing-flight:8084
       LOYALTY_SERVICE_URI: http://boeing-loyalty:8085/loyalty-service
-      FRONTEND_URI: http://localhost:5173
+      FRONTEND_URI: https://boeing.theanh0804.id.vn
       EUREKA_HOSTNAME: boeing-booking
     healthcheck:
       test: [ "CMD-SHELL", "curl -s http://localhost:8082/booking-service/actuator/health | grep '\"status\":\"UP\"'" ]

@@ -23,6 +23,7 @@ import com.boeing.bookingservice.integration.fs.dto.FsReleaseFareResponseDTO;
 import com.boeing.bookingservice.integration.fs.dto.FsReleaseSeatsRequestDTO;
 import com.boeing.bookingservice.integration.fs.dto.FsReleaseSeatsResponseDTO;
 import com.boeing.bookingservice.integration.fs.dto.FsSeatsAvailabilityResponseDTO;
+import com.boeing.bookingservice.dto.response.FlightDetailDTO;
 
 @FeignClient(name = "flight-service", url = "${services.flight-service.url}")
 public interface FlightClient {
@@ -76,5 +77,17 @@ public interface FlightClient {
             @PathVariable("flightId") UUID flightId,
             @RequestBody FsReleaseSeatsRequestDTO request
     );
+
+    /**
+     * Get basic flight details for analysis purposes
+     */
+    @GetMapping("/flight-service/api/v1/fs/flights/{flightId}/basic-details")
+    FlightDetailDTO getFlightBasicDetails(@PathVariable("flightId") UUID flightId);
+
+    /**
+     * Get multiple flight details in batch for analysis
+     */
+    @PostMapping("/flight-service/api/v1/fs/flights/batch-details")
+    List<FlightDetailDTO> getFlightDetailsBatch(@RequestBody List<UUID> flightIds);
 
 }

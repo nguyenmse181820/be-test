@@ -21,6 +21,16 @@ business:
   default-checked-baggage-weight: 30
   minimum-hours-between-flights-of-aircraft: 3
 
+scheduler:
+  flight-status:
+    enabled: true
+    # Close booking XX hours before departure (default: 2 hours)
+    close-booking-hours-before-departure: 2
+    # CRON expression for closing bookings - runs every 5 minutes
+    close-booking-cron: "0 */5 * * * *"
+    # CRON expression for completing flights - runs every 10 minutes
+    complete-flights-cron: "0 */10 * * * *"
+
 server:
   servlet:
     context-path: /flight-service

@@ -67,6 +67,9 @@ public class BookingDetail extends BaseEntity {
     @Column(name = "booking_code", nullable = false)
     private String bookingCode;
 
+    @Column(name = "flight_index")
+    private Integer flightIndex;
+
     @OneToMany(mappedBy = "bookingDetail", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<RescheduleFlightHistory> rescheduleHistories = new ArrayList<>();

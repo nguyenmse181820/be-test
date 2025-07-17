@@ -24,7 +24,9 @@ import com.boeing.bookingservice.repository.specifications.BookingSpecifications
 import com.boeing.bookingservice.saga.orchestrator.CreateBookingSagaOrchestrator;
 import com.boeing.bookingservice.service.BookingService;
 import com.boeing.bookingservice.service.PaymentService;
-import com.boeing.bookingservice.util.BookingUtils;
+import com.boeing.bookingservice.service.FlightAnalysisService;
+import com.boeing.bookingservice.utils.BookingUtils;
+import com.boeing.bookingservice.utils.FlightTypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -58,6 +60,7 @@ public class BookingServiceImpl implements BookingService {
     private final PassengerMapper passengerMapper;
     private final FlightClient flightClient;
     private final LoyaltyClientWrapper loyaltyClient;
+    private final FlightAnalysisService flightAnalysisService;
     @Lazy
     private final PaymentService paymentService;
     private final ApplicationEventPublisher eventPublisher;
@@ -537,10 +540,71 @@ public class BookingServiceImpl implements BookingService {
         // Use common method to process passengers - reduces code duplication
         Map<Integer, Passenger> passengerEntities = processPassengers(passengerInfosFromRequest, userId);
 
+        // ========== FLIGHT ANALYSIS LOGIC - SMART IMPLEMENTATION ==========
+        // Analyze flight relationships and assign indices for proper ordering
+        log.info("[FLIGHT_ANALYSIS] Analyzing flight relationships for {} flights", flightIds.size());
+        
+        Map<UUID, Integer> flightIndices = new HashMap<>();
+        
+        try {
+            // Get flight analysis result
+            var flightAnalysisResult = flightAnalysisService.analyzeFlightIndices(flightIds);
+            
+            // Determine flight type
+            var flightType = flightAnalysisService.determineFlightType(flightAnalysisResult);
+            
+            // Validate flight sequence
+            boolean isValidSequence = flightAnalysisService.validateFlightSequence(flightIds);
+            
+            if (!isValidSequence) {
+                log.warn("[FLIGHT_ANALYSIS] Invalid flight sequence detected for booking {}", bookingReferenceForDisplay);
+                // You might want to throw an exception here or handle differently
+            }
+            
+            // Log analysis results
+            log.info("[FLIGHT_ANALYSIS] Flight Type: {}, Round Trip: {}, Connecting: {}, Total Segments: {}",
+                    flightType, 
+                    flightAnalysisResult.isRoundTrip(),
+                    flightAnalysisResult.isHasConnectingFlights(),
+                    flightAnalysisResult.getTotalSegmentCount());
+            
+            // Log flight indices for debugging
+            flightAnalysisResult.getFlightIndices().forEach((flightId, index) -> {
+                log.info("[FLIGHT_ANALYSIS] Flight {} assigned index: {} ({})", 
+                        flightId, index, FlightTypeUtil.determineFlightDirection(index));
+            });
+            
+            // Store flight indices for use in booking detail creation
+            flightIndices = flightAnalysisResult.getFlightIndices();
+            
+            // Update booking type based on analysis
+            if (flightAnalysisResult.isRoundTrip()) {
+                booking.setType(BookingType.ROUND_TRIP);
+            } else if (flightAnalysisResult.isHasConnectingFlights()) {
+                booking.setType(BookingType.CONNECTING);
+            } else if (flightIds.size() > 1) {
+                booking.setType(BookingType.MULTI_SEGMENT);
+            }
+            
+            log.info("[FLIGHT_ANALYSIS] Updated booking type to: {}", booking.getType());
+            
+        } catch (Exception e) {
+            log.error("[FLIGHT_ANALYSIS] Error during flight analysis for booking {}: {}", 
+                    bookingReferenceForDisplay, e.getMessage(), e);
+            // Continue with default behavior if analysis fails
+        }
+        // ========== END FLIGHT ANALYSIS LOGIC ==========
+
         // Process each flight segment
         for (int flightIndex = 0; flightIndex < flightIds.size(); flightIndex++) {
             UUID flightId = flightIds.get(flightIndex);
             Map<String, Object> flightDetail = flightDetails.get(flightIndex);
+            
+            // Get flight index from analysis result
+            Integer analysisFlightIndex = flightIndices.get(flightId);
+            
+            log.debug("[FLIGHT_ANALYSIS] Processing flight {}: ID={}, analysisIndex={}", 
+                    flightIndex, flightId, analysisFlightIndex);
 
             log.debug("[MULTI_SEGMENT] Processing flight {}: {}", flightIndex, flightDetail);
 
@@ -664,7 +728,8 @@ public class BookingServiceImpl implements BookingService {
                         selectedFareNameFromRequest,
                         validSeatMap,
                         validPricingMap,
-                        segmentBookingCode);
+                        segmentBookingCode,
+                        analysisFlightIndex); // Flight index from analysis
             } else {
                 log.info("[MULTI_SEGMENT] No valid passengers for flight {}, skipping detail creation", flightId);
                 segmentResult = new BookingUtils.BookingDetailsResult(Collections.emptyList(), 0.0);

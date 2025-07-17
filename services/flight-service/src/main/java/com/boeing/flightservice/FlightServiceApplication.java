@@ -7,6 +7,8 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
+import java.util.TimeZone;
+
 @SpringBootApplication
 @EnableDiscoveryClient
 @ComponentScan({
@@ -20,6 +22,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 public class FlightServiceApplication {
 
     public static void main(String[] args) {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         SpringApplication.run(FlightServiceApplication.class, args);
     }
 

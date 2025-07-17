@@ -47,4 +47,18 @@ public interface FlightRepository extends JpaRepository<Flight, UUID>, JpaSpecif
     boolean existsByCodeAndDeleted(String code, Boolean deleted);
     
     Flight findByCodeAndDeleted(String code, Boolean deleted);
+    
+    // For flight status scheduler
+    List<Flight> findByStatusAndDeletedAndDepartureTimeBetween(
+            FlightStatus status,
+            Boolean deleted,
+            LocalDateTime departureTimeStart,
+            LocalDateTime departureTimeEnd
+    );
+    
+    List<Flight> findByStatusNotInAndDeletedAndDepartureTimeBefore(
+            List<FlightStatus> statuses,
+            Boolean deleted,
+            LocalDateTime departureTime
+    );
 }

@@ -27,9 +27,6 @@ public class RefundRequestService {
     private final RefundRequestRepository refundRequestRepository;
     private final BookingRepository bookingRepository;
 
-    /**
-     * Kiểm tra user có quyền tạo refund request cho booking này không
-     */
     public void verifyUserCanCreateRefundForBooking(String bookingReference, UUID userId) {
         log.info("[REFUND_SECURITY] Verifying user {} can create refund for booking: {}", userId, bookingReference);
         

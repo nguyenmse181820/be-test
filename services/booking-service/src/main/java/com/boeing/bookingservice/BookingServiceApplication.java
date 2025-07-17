@@ -7,6 +7,8 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.util.TimeZone;
+
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients
@@ -15,6 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class BookingServiceApplication {
 
     public static void main(String[] args) {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
         SpringApplication.run(BookingServiceApplication.class, args);
     }
 

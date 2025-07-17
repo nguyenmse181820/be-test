@@ -72,6 +72,12 @@ public class FlightServiceImpl implements FlightService {
         Flight flight = flightRepository.findByIdAndDeleted(flightId, false)
                 .orElseThrow(() -> new BadRequestException("Flight not found with ID " + flightId));
 
+        // Check flight status - only allow seat availability check for SCHEDULED_OPEN flights
+        if (flight.getStatus() != FlightStatus.SCHEDULED_OPEN) {
+            throw new BadRequestException("Cannot check seat availability for flight " + flight.getCode() + 
+                    " - booking is closed (status: " + flight.getStatus() + ")");
+        }
+
         boolean allRequestedSeatsAvailable = true;
         List<FsSeatsAvailabilityResponseDTO.SeatStatus> seatStatuses = new ArrayList<>();
 
@@ -223,6 +229,13 @@ public class FlightServiceImpl implements FlightService {
 
         Flight flight = flightRepository.findByIdAndDeleted(flightId, false)
                 .orElseThrow(() -> new BadRequestException("Flight not found with ID " + flightId));
+        
+        // Check flight status - only allow seat confirmation for SCHEDULED_OPEN flights
+        if (flight.getStatus() != FlightStatus.SCHEDULED_OPEN) {
+            throw new BadRequestException("Cannot confirm seats for flight " + flight.getCode() + 
+                    " - booking is closed (status: " + flight.getStatus() + ")");
+        }
+        
         String status;
         String message;
         List<String> confirmedSeats = new ArrayList<>();
