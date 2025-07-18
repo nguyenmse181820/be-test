@@ -10,11 +10,11 @@ import java.util.UUID;
 
 public interface BoardingPassRepository extends JpaRepository<BoardingPass, UUID> {
     @Query("""
-    SELECT CASE WHEN COUNT(bp) > 0 THEN TRUE ELSE FALSE END
+    SELECT COUNT(DISTINCT bp.bookingDetailId) = :#{#bookingDetailIds.size()}
     FROM BoardingPass bp
-    WHERE bp.bookingDetailId = :bookingDetailId
+    WHERE bp.bookingDetailId IN :bookingDetailIds
 """)
-    Boolean existsByBookingDetailId(@Param("bookingDetailId") UUID bookingDetailId);
+    Boolean existsAllByBookingDetailIds(@Param("bookingDetailIds") List<UUID> bookingDetailIds);
 
     BoardingPass findByBookingDetailId(UUID bookingDetailId);
 

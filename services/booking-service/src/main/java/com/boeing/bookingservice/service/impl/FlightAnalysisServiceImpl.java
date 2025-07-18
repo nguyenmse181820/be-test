@@ -2,12 +2,16 @@ package com.boeing.bookingservice.service.impl;
 
 import com.boeing.bookingservice.dto.response.FlightAnalysisResult;
 import com.boeing.bookingservice.dto.response.FlightDetailDTO;
+import com.boeing.bookingservice.exception.FlightAnalysisException;
 import com.boeing.bookingservice.integration.fs.FlightClient;
+import com.boeing.bookingservice.integration.fs.dto.FsFlightWithFareDetailsDTO;
 import com.boeing.bookingservice.model.enums.FlightType;
 import com.boeing.bookingservice.service.FlightAnalysisService;
+import com.boeing.bookingservice.utils.FlightDTOConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import feign.FeignException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,28 +29,37 @@ public class FlightAnalysisServiceImpl implements FlightAnalysisService {
     
     @Override
     public FlightAnalysisResult analyzeFlightIndices(List<UUID> flightIds) {
+        log.info("🔍 Starting flight analysis for {} flights: {}", flightIds.size(), flightIds);
+        
         if (flightIds == null || flightIds.isEmpty()) {
-            return createEmptyResult();
+            throw new IllegalArgumentException("Flight IDs cannot be null or empty");
+        }
+        
+        // Check for duplicate flight IDs
+        Set<UUID> uniqueFlightIds = new HashSet<>(flightIds);
+        if (uniqueFlightIds.size() != flightIds.size()) {
+            log.warn("⚠️ Duplicate flight IDs detected in analysis request: {}", flightIds);
         }
         
         try {
-            // Get flight details in batch for efficiency
+            // Get flight details for all flights using robust sequential API calls
             List<FlightDetailDTO> flights = getFlightDetailsBatch(flightIds);
-            
-            if (flights.isEmpty()) {
-                log.warn("No flight details found for provided flight IDs");
-                return createEmptyResult();
-            }
             
             // Sort flights by departure time to ensure chronological order
             flights.sort(Comparator.comparing(FlightDetailDTO::getDepartureTime));
             
-            // Analyze flight connections and assign indices
-            return performFlightAnalysis(flights);
+            // Perform analysis
+            FlightAnalysisResult result = performFlightAnalysis(flights);
             
+            log.info("✅ Flight analysis completed successfully. Result: {}", result);
+            return result;
+            
+        } catch (FlightAnalysisException e) {
+            log.error("❌ Flight analysis failed: {}", e.getMessage());
+            throw e; // Re-throw to be handled by caller
         } catch (Exception e) {
-            log.error("Error analyzing flight indices for flight IDs: {}", flightIds, e);
-            return createEmptyResult();
+            log.error("❌ Unexpected error during flight analysis", e);
+            throw new FlightAnalysisException("Unexpected error during flight analysis: " + e.getMessage(), e);
         }
     }
     
@@ -101,33 +114,73 @@ public class FlightAnalysisServiceImpl implements FlightAnalysisService {
         }
     }
     
+    /**
+     * Fetches flight details for multiple flight IDs using sequential API calls.
+     * This method implements robust error handling and fails fast if any flight cannot be retrieved.
+     * 
+     * @param flightIds List of flight IDs to fetch details for
+     * @return List of FlightDetailDTO objects for all requested flights
+     * @throws FlightAnalysisException if any flight details cannot be retrieved
+     */
     private List<FlightDetailDTO> getFlightDetailsBatch(List<UUID> flightIds) {
-        try {
-            // Use batch API if available, otherwise fallback to individual calls
-            return flightClient.getFlightDetailsBatch(flightIds);
-        } catch (Exception e) {
-            log.warn("Batch flight details not available, falling back to individual calls");
-            return getFlightDetailsIndividually(flightIds);
-        }
-    }
-    
-    private List<FlightDetailDTO> getFlightDetailsIndividually(List<UUID> flightIds) {
-        List<FlightDetailDTO> flights = new ArrayList<>();
+        log.info("🔍 Retrieving flight details for {} flights using sequential API calls", flightIds.size());
         
+        // Initialize empty list to collect results
+        List<FlightDetailDTO> results = new ArrayList<>();
+        
+        // Process each flight ID sequentially
         for (UUID flightId : flightIds) {
             try {
-                FlightDetailDTO flight = flightClient.getFlightBasicDetails(flightId);
-                if (flight != null) {
-                    flights.add(flight);
+                log.debug("🔍 Fetching details for flight: {}", flightId);
+                
+                // Call the existing single-flight API
+                FsFlightWithFareDetailsDTO fsFlightDetails = flightClient.getFlightDetails(flightId);
+                
+                // Validate the response
+                if (fsFlightDetails == null) {
+                    throw new FlightAnalysisException(
+                        String.format("Failed to fetch details for flight ID: %s. Flight service returned null response. Analysis cannot proceed.", flightId)
+                    );
                 }
+                
+                // Convert to internal DTO
+                FlightDetailDTO flightDetail = FlightDTOConverter.convertToFlightDetailDTO(fsFlightDetails);
+                
+                if (flightDetail == null) {
+                    throw new FlightAnalysisException(
+                        String.format("Failed to fetch details for flight ID: %s. Unable to convert flight service response to internal format. Analysis cannot proceed.", flightId)
+                    );
+                }
+                
+                // Add to results
+                results.add(flightDetail);
+                log.debug("✅ Successfully retrieved details for flight: {}", flightId);
+                
+            } catch (FlightAnalysisException e) {
+                // Re-throw our custom exception as-is
+                throw e;
+            } catch (FeignException e) {
+                // Handle Feign client errors with detailed information
+                String errorMessage = String.format("Failed to fetch details for flight ID: %s. Feign client error: Status %d - %s. Analysis cannot proceed.", 
+                    flightId, e.status(), e.getMessage());
+                
+                log.error("❌ {}", errorMessage);
+                throw new FlightAnalysisException(errorMessage, e);
+                
             } catch (Exception e) {
-                log.error("Error fetching flight details for ID: {}", flightId, e);
+                // Handle any other unexpected errors
+                String errorMessage = String.format("Failed to fetch details for flight ID: %s. Unexpected error: %s. Analysis cannot proceed.", 
+                    flightId, e.getMessage());
+                
+                log.error("❌ {}", errorMessage, e);
+                throw new FlightAnalysisException(errorMessage, e);
             }
         }
         
-        return flights;
+        log.info("✅ Successfully retrieved details for all {} flights", results.size());
+        return results;
     }
-    
+
     private FlightAnalysisResult performFlightAnalysis(List<FlightDetailDTO> flights) {
         Map<UUID, Integer> flightIndices = new HashMap<>();
         

@@ -7,6 +7,7 @@ import com.boeing.bookingservice.dto.response.BookingInitiatedResponseDTO;
 import com.boeing.bookingservice.dto.response.BookingSummaryDTO;
 import com.boeing.bookingservice.event.BookingCompletedEvent;
 import com.boeing.bookingservice.exception.BadRequestException;
+import com.boeing.bookingservice.exception.FlightAnalysisException;
 import com.boeing.bookingservice.exception.ResourceNotFoundException;
 import com.boeing.bookingservice.exception.SagaProcessingException;
 import com.boeing.bookingservice.integration.fs.FlightClient;
@@ -588,10 +589,24 @@ public class BookingServiceImpl implements BookingService {
             
             log.info("[FLIGHT_ANALYSIS] Updated booking type to: {}", booking.getType());
             
+        } catch (FlightAnalysisException e) {
+            log.error("[FLIGHT_ANALYSIS] ❌ Flight analysis failed for booking {}: {}", 
+                    bookingReferenceForDisplay, e.getMessage());
+            
+            // For flight analysis errors, fail the booking with a specific error message
+            throw new BadRequestException(
+                "Unable to process booking due to flight analysis failure. " +
+                "Please verify your flight selection and try again. " +
+                "Error: " + e.getMessage()
+            );
         } catch (Exception e) {
-            log.error("[FLIGHT_ANALYSIS] Error during flight analysis for booking {}: {}", 
+            log.error("[FLIGHT_ANALYSIS] ❌ Unexpected error during flight analysis for booking {}: {}", 
                     bookingReferenceForDisplay, e.getMessage(), e);
-            // Continue with default behavior if analysis fails
+            // For other unexpected errors, also fail the booking
+            throw new BadRequestException(
+                "Unable to process booking due to flight analysis error. " +
+                "Please try again later or contact support if the problem persists."
+            );
         }
         // ========== END FLIGHT ANALYSIS LOGIC ==========
 

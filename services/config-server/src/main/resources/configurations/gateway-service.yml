@@ -10,7 +10,7 @@ spring:
       discovery:
         locator:
           enabled: true
-          refresh-rate: 10s
+          refresh-rate: 5s
       routes:
         - id: user-service
           uri: lb://USER-SERVICE

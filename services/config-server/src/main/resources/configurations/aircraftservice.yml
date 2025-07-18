@@ -6,9 +6,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://${DB_HOSTNAME:localhost}:${DB_PORT:5432}/aircraft_db
-    username: postgres
-    password: 12345
+    url: jdbc:postgresql://${DB_HOSTNAME:localhost}:${DB_PORT:5432}/aircraft
+    username: boeing
+    password: boeing
   jpa:
     hibernate:
       ddl-auto: update

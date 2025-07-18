@@ -109,18 +109,22 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
      * Get daily revenue breakdown from payments - simplified approach
      */
     @Query("SELECT DATE(p.createdAt) as paymentDate, SUM(p.amount) as dailyRevenue " +
-           "FROM Payment p " +
-           "WHERE p.status = :status AND p.createdAt BETWEEN :dateFrom AND :dateTo " +
-           "GROUP BY DATE(p.createdAt) " +
-           "ORDER BY paymentDate")
+            "FROM Payment p " +
+            "WHERE p.status = :status AND p.createdAt BETWEEN :dateFrom AND :dateTo " +
+            "GROUP BY DATE(p.createdAt) " +
+            "ORDER BY paymentDate")
     List<Object[]> getDailyRevenueFromPaymentsBetween(@Param("status") PaymentStatus status,
                                                       @Param("dateFrom") LocalDateTime dateFrom,
                                                       @Param("dateTo") LocalDateTime dateTo);
 
     @Query("SELECT DATE(p.createdAt) as paymentDate, SUM(p.amount) as dailyRevenue " +
-           "FROM Payment p " +
-           "WHERE p.status = :status " +
-           "GROUP BY DATE(p.createdAt) " +
-           "ORDER BY paymentDate")
+            "FROM Payment p " +
+            "WHERE p.status = :status " +
+            "GROUP BY DATE(p.createdAt) " +
+            "ORDER BY paymentDate")
     List<Object[]> getDailyRevenueFromAllSuccessfulPayments(@Param("status") PaymentStatus status);
+
+    List<Payment> findByPaymentDateBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+    List<Payment> findTop10ByOrderByPaymentDateDesc();
 }

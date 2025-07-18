@@ -44,7 +44,7 @@ services:
       DB_PORT: 5432
       RABBITMQ_HOST: boeing-rabbitmq
       RABBITMQ_PORT: 5672
-      VNPAY_RETURN_URL: http://boeing-booking:8082/booking-service/api/v1/payment/vn-pay-callback
+      VNPAY_RETURN_URL: https://api.boeing.theanh0804.id.vn/booking-service/api/v1/payment/vn-pay-callback
       EUREKA_URI: http://boeing-discovery:8761/eureka/
       FLIGHT_SERVICE_URI: http://boeing-flight:8084/flight-service
       FLIGHT_SERVICE_URL: http://boeing-flight:8084

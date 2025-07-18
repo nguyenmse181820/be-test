@@ -23,6 +23,9 @@ public class BaggageDto {
     @Max(value = 100, message = "Weight should be under 100")
     private Double weight;
 
+    @NotNull(message = "Type of baggage can not be null")
+    private String type;
+
     @NotNull(message = "Tag code should not be null")
     private String tagCode;
 

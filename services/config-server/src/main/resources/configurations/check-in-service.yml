@@ -1,11 +1,8 @@
 spring:
   datasource:
-#    url: jdbc:postgresql://18.139.219.235:5433/checkin-service
-#    username: boeing
-#    password: boeing
-    url: jdbc:postgresql://localhost:5432/checkin-service
-    username: postgres
-    password: 12345
+    url: jdbc:postgresql://${DB_HOSTNAME:localhost}:${DB_PORT:5432}/checkin
+    username: boeing
+    password: boeing
 
     driver-class-name: org.postgresql.Driver
   jpa:

@@ -31,6 +31,9 @@ public class Baggage extends Auditable {
     @Column(name = "status")
     BaggageStatus status;
 
+    @Column(name = "type")
+    String type;
+
     @ManyToOne
     @JoinColumn(name = "boarding_id")
     BoardingPass boardingPass;

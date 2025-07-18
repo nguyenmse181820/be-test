@@ -15,12 +15,10 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @ControllerAdvice
-@SuppressWarnings("CallToPrintStackTrace")
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<APIResponse> handleValidationException(MethodArgumentNotValidException ex) {
-        ex.printStackTrace();
         Map<String, String> errors = new HashMap<>();
 
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
@@ -36,7 +34,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<APIResponse> badRequestException(BadRequestException e) {
-        e.printStackTrace();
         return ResponseEntity
                 .status(BAD_REQUEST)
                 .body(
@@ -49,7 +46,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<APIResponse> runtimeException(RuntimeException e) {
-        e.printStackTrace();
         return ResponseEntity
                 .status(INTERNAL_SERVER_ERROR)
                 .body(

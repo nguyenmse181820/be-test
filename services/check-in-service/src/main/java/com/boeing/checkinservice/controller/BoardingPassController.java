@@ -2,6 +2,7 @@ package com.boeing.checkinservice.controller;
 
 import com.boeing.checkinservice.dto.requests.AddBoardingPassDto;
 import com.boeing.checkinservice.dto.responses.ApiResponse;
+import com.boeing.checkinservice.dto.responses.BookingDetailInfoDTO;
 import com.boeing.checkinservice.service.inte.BoardingPassService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,13 +22,13 @@ public class BoardingPassController {
 
     private final BoardingPassService boardingPassService;
 
-    @GetMapping
-    public ResponseEntity<?> getAllBoardingPass(@RequestParam(name = "bookingReference") String bookingReference) {
+    @PostMapping("/processing-get-all-boarding-pass")
+    public ResponseEntity<?> getAllBoardingPass(@RequestBody List<BookingDetailInfoDTO> details) {
         return ResponseEntity.ok(ApiResponse
                 .builder()
                 .success(true)
                 .message("Get All Boarding Pass Successfully")
-                .data(boardingPassService.getAllBoardingPassesByBookingReference(bookingReference))
+                .data(boardingPassService.getAllBoardingPassesByBookingReference(details))
                 .build());
     }
 
@@ -54,10 +55,10 @@ public class BoardingPassController {
     }
 
     @GetMapping("/check-in-status")
-    public ResponseEntity<?> checkInStatus(@RequestParam("booking_detail_id") UUID booking_detail_id) {
+    public ResponseEntity<?> checkInStatus(@RequestParam("booking_detail_ids") List<UUID> bookingDetailIds) {
         return ResponseEntity.ok(ApiResponse.builder()
                         .message("Check In Status Successfully")
-                        .data(boardingPassService.checkInStatus(booking_detail_id))
+                        .data(boardingPassService.checkInStatus(bookingDetailIds))
                 .build());
     }
 }

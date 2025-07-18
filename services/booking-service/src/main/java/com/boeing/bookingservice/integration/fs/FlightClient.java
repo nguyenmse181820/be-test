@@ -78,16 +78,7 @@ public interface FlightClient {
             @RequestBody FsReleaseSeatsRequestDTO request
     );
 
-    /**
-     * Get basic flight details for analysis purposes
-     */
-    @GetMapping("/flight-service/api/v1/fs/flights/{flightId}/basic-details")
-    FlightDetailDTO getFlightBasicDetails(@PathVariable("flightId") UUID flightId);
-
-    /**
-     * Get multiple flight details in batch for analysis
-     */
-    @PostMapping("/flight-service/api/v1/fs/flights/batch-details")
-    List<FlightDetailDTO> getFlightDetailsBatch(@RequestBody List<UUID> flightIds);
+    @GetMapping("/flight-service/api/v1/fs/flights/{flightId}/details")
+    FsFlightWithFareDetailsDTO getFlightBasicDetails(@PathVariable("flightId") UUID flightId);
 
 }

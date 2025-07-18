@@ -37,33 +37,34 @@ public class BoardingPassServiceImpl implements BoardingPassService {
     private final BaggageRepository baggageRepository;
 
     @Override
-    public Optional<?> getAllBoardingPassesByBookingReference(String bookingReference) {
-        BookingFullDetailResponseDTO dto = bookingClient.getBookingDetails(bookingReference).getData();
+    public Optional<?> getAllBoardingPassesByBookingReference(List<BookingDetailInfoDTO> details) {
+//        BookingFullDetailResponseDTO dto = bookingClient.getBookingDetails(bookingReference).getData();
+//
+//        if (dto == null || dto.getDetails().isEmpty()) {
+//            return Optional.empty();
+//        }
 
-        if (dto == null || dto.getDetails().isEmpty()) {
-            return Optional.empty();
-        }
+//        List<BookingDetailInfoDTO> detailDtos = dto.getDetails();
+//        List<BaggageAddonResponseDTO> baggageAddons = dto.getBaggageAddons();
 
-        List<BookingDetailInfoDTO> detailDtos = dto.getDetails();
-        List<BaggageAddonResponseDTO> baggageAddons = dto.getBaggageAddons();
-
-        List<BoardingPassDto> response = detailDtos.stream()
+        List<BoardingPassDto> response = details.stream()
                 .map(detail -> {
                     BoardingPass boardingPass = boardingPassRepository.findByBookingDetailId(detail.getBookingDetailId());
                     if (boardingPass == null) return null;
 
                     // Lấy danh sách baggage tương ứng
+//                    List<BaggageDtoResponse> baggageResponses = boardingPass.getBaggage().stream()
+//                            .map(baggage -> {
+//                                // Tìm baggage addon theo id (nếu cần)
+//                                BaggageAddonResponseDTO matchedAddon = baggageAddons.stream()
+//                                        .filter(addon -> addon.getId().equals(baggage.getId()))
+//                                        .findFirst()
+//                                        .orElse(null);
+//
+//                                return mapToBaggageDtoResponse(baggage, matchedAddon);
+//                            }).toList();
                     List<BaggageDtoResponse> baggageResponses = boardingPass.getBaggage().stream()
-                            .map(baggage -> {
-                                // Tìm baggage addon theo id (nếu cần)
-                                BaggageAddonResponseDTO matchedAddon = baggageAddons.stream()
-                                        .filter(addon -> addon.getId().equals(baggage.getId()))
-                                        .findFirst()
-                                        .orElse(null);
-
-                                return mapToBaggageDtoResponse(baggage, matchedAddon);
-                            }).toList();
-
+                            .map(this::mapToBaggageDtoResponse).toList();
                     return mapToDto(boardingPass, detail, baggageResponses);
                 })
                 .filter(Objects::nonNull)
@@ -94,12 +95,12 @@ public class BoardingPassServiceImpl implements BoardingPassService {
     }
 
 
-    private BaggageDtoResponse mapToBaggageDtoResponse(Baggage entity, BaggageAddonResponseDTO baggageDtoResponse) {
+    private BaggageDtoResponse mapToBaggageDtoResponse(Baggage entity) {
         return BaggageDtoResponse.builder()
                 .id(entity.getId())
                 .weight(entity.getWeight())
                 .tagCode(entity.getTagCode())
-                .type(baggageDtoResponse.getType().name())
+                .type(entity.getType())
                 .build();
     }
 
@@ -142,6 +143,7 @@ public class BoardingPassServiceImpl implements BoardingPassService {
                                 .id(UUID.fromString(baggage.getBaggageAddOnsId()))
                                 .boardingPass(saved)
                                 .tagCode(baggage.getTagCode())
+                                .type(baggage.getType())
                                 .weight(baggage.getWeight())
                                 .status(BaggageStatus.TAGGED)
                                 .build();
@@ -165,8 +167,8 @@ public class BoardingPassServiceImpl implements BoardingPassService {
     }
 
     @Override
-    public Optional<?> checkInStatus(UUID booking_detail_id) {
-        Boolean isChecked = boardingPassRepository.existsByBookingDetailId(booking_detail_id);
+    public Optional<?> checkInStatus(List<UUID> booking_detail_ids) {
+        Boolean isChecked = boardingPassRepository.existsAllByBookingDetailIds(booking_detail_ids);
         return Optional.of(isChecked);
     }
 

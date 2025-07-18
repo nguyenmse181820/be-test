@@ -1,7 +1,6 @@
 package com.boeing.flightservice.config.security;
 
 import com.boeing.flightservice.dto.common.APIResponse;
-import com.boeing.flightservice.exception.UnauthorizedException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,7 +24,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("CallToPrintStackTrace")
 public class AuthenticationFilter extends OncePerRequestFilter {
 
     private final RestTemplate restTemplate;
@@ -53,41 +51,41 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        try {
-            // SWAGGER redirection
-            if (request.getServletPath().equals("/")) {
-                response.sendRedirect(request.getContextPath() + "/swagger-ui/index.html");
-                return;
-            }
-            // PUBLIC path checking
-            final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-            if (isPublicPath(request)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                throw new UnauthorizedException("Missing or invalid token");
-            }
-            String token = authHeader.substring(7);
-            Token.ValidationResponse validationResponse = restTemplate.postForObject(
-                    authenticationUrl,
-                    Token.ValidationRequest.builder().token(token).build(),
-                    Token.ValidationResponse.class
-            );
-            if (validationResponse == null || !validationResponse.valid()) {
-                throw new UnauthorizedException("Invalid token");
-            }
-            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                    validationResponse.email(),
-                    null,
-                    List.of(new SimpleGrantedAuthority("ROLE_" + validationResponse.role()))
-            );
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-        } catch (Exception e) {
-            e.printStackTrace();
-            buildResponse(response, "Unauthorized: " + e.getMessage());
+        // SWAGGER redirection
+        if (request.getServletPath().equals("/")) {
+            response.sendRedirect(request.getContextPath() + "/swagger-ui/index.html");
             return;
         }
+        // PUBLIC path checking
+        final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (isPublicPath(request)) {
+            System.out.println("Public path accessed: " + request.getRequestURI());
+            filterChain.doFilter(request, response);
+            return;
+        }
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("Unauthorized access attempt: " + request.getRequestURI());
+            buildResponse(response, "Unauthorized: Missing or invalid token");
+            return;
+        }
+        String token = authHeader.substring(7);
+        Token.ValidationResponse validationResponse = restTemplate.postForObject(
+                authenticationUrl,
+                Token.ValidationRequest.builder().token(token).build(),
+                Token.ValidationResponse.class
+        );
+        if (validationResponse == null || !validationResponse.valid()) {
+            System.out.println("Unauthorized access attempt with invalid token: " + request.getRequestURI());
+            buildResponse(response, "Unauthorized: Invalid token");
+            return;
+        }
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                validationResponse.email(),
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_" + validationResponse.role()))
+        );
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        System.out.println("Authorized access for user: " + validationResponse.email() + " to " + request.getRequestURI());
         filterChain.doFilter(request, response);
     }
 
